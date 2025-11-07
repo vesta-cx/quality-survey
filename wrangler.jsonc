@@ -4,19 +4,54 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "quality-survey",
+	"name": "vesta-quality-survey",
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2025-11-06",
-	"compatibility_flags": [
-		"nodejs_als"
-	],
+	"compatibility_flags": ["nodejs_compat", "nodejs_als"],
 	"assets": {
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
+	"preview_urls": true,
 	"observability": {
 		"enabled": true
+	},
+	"routes": [
+		{
+			"pattern": "survey.vesta.cx",
+			"zone_name": "vesta.cx",
+			"custom_domain": true
+		}
+	],
+	"env": {
+		"production": {
+			"routes": [
+				{
+					"pattern": "survey.vesta.cx/*",
+					"zone_name": "vesta.cx"
+				}
+			]
+		},
+		"development": {
+			"routes": [
+				{
+					"pattern": "dev.survey.vesta.cx",
+					"zone_name": "vesta.cx",
+					"custom_domain": true
+				}
+			]
+		},
+		"staging": {
+			"routes": [
+				{
+					"pattern": "staging.survey.vesta.cx",
+					"zone_name": "vesta.cx",
+					"custom_domain": true
+				}
+			]
+		}
 	}
+
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
