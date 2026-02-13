@@ -13,6 +13,17 @@ const dirname =
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+	server: {
+		fs: {
+			// Allow serving files from the monorepo root (pnpm hoists deps there)
+			allow: [path.resolve(dirname, '../..')]
+		}
+	},
+	ssr: {
+		// These packages ship .svelte / .svelte.js files with runes — must be
+		// processed by Vite's Svelte plugin, not Node's ESM loader
+		noExternal: ['bits-ui', 'svelte-toolbelt']
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit(),

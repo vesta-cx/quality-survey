@@ -1,2 +1,4 @@
 PRIVATE_WORKOS_CLIENT_ID=client_xxxxxxxxxxxxxxxxxxxxxxxxxx
 PRIVATE_WORKOS_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+PRIVATE_WORKOS_ORG_ID=org_xxxxxxxxxxxxxxxxxxxxxxxxxx
+PRIVATE_WORKOS_COOKIE_PASSWORD=<32+ char secret via openssl rand -base64 24>

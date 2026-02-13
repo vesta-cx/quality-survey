@@ -35,4 +35,4 @@ storybook-static
 .dev.vars*
 !.dev.vars.example
 
-static/sample-audio/*
+sample-audio/*

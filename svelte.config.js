@@ -3,7 +3,12 @@ import adapter from '@sveltejs/adapter-cloudflare';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	kit: { adapter: adapter() },
+	kit: {
+		adapter: adapter(),
+		env: {
+			privatePrefix: 'PRIVATE_'
+		}
+	},
 	preprocess: [mdsvex()],
 	extensions: ['.svelte', '.svx']
 };
