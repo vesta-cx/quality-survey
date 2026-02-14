@@ -32,12 +32,10 @@ const weightedRandom = <T extends string>(weights: Record<T, number>): T => {
 
 const randomElement = <T>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
-const LOG = '[game]';
-
 export interface ComparisonRound {
 	tokenA: string;
 	tokenB: string;
-	/** Ephemeral tokens for opus_256 of each source (YWLT preload). Null if opus_256 not available. */
+	/** Ephemeral tokens for opus_128 of each source (YWLT preload). Null if opus_128 not available. */
 	tokenYwltA: string | null;
 	tokenYwltB: string | null;
 	transitionMode: TransitionMode;
@@ -56,8 +54,6 @@ export const generateRound = async (
 	enabledModes: EnabledTransitionModes = null,
 	enabledPairing: EnabledPairingTypes = null
 ): Promise<ComparisonRound | null> => {
-	console.log(`${LOG} generateRound() called`);
-
 	// Get all approved source files
 	const approvedSources = await db
 		.select()
@@ -66,7 +62,6 @@ export const generateRound = async (
 		.all();
 
 	if (approvedSources.length === 0) {
-		console.log(`${LOG} No approved sources`);
 		return null;
 	}
 
@@ -78,7 +73,6 @@ export const generateRound = async (
 		.all();
 
 	if (enabledOptions.length === 0) {
-		console.log(`${LOG} No enabled quality options`);
 		return null;
 	}
 
@@ -101,7 +95,6 @@ export const generateRound = async (
 		pairingPool.map((p) => [p, (dbWeights[p] ?? 1) / totalWeight])
 	) as Record<PairingType, number>;
 	const pairingType = weightedRandom(pairingWeights);
-	console.log(`${LOG} Pairing type: ${pairingType}`);
 
 	const segmentDurationMs = await getSegmentDuration(db);
 
@@ -219,15 +212,6 @@ export const generateRound = async (
 	// Create ephemeral stream URLs (10-min expiry)
 	const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-	console.log(`${LOG} Creating 2 ephemeral stream URLs`, {
-		candidateAId: candidateA.id,
-		candidateBId: candidateB.id,
-		startTime,
-		duration: segmentDurationMs,
-		transitionMode,
-		expiresAt: expiresAt.toISOString()
-	});
-
 	const [tokenARow] = await db
 		.insert(ephemeralStreamUrls)
 		.values({ candidateFileId: candidateA.id, expiresAt })
@@ -239,13 +223,12 @@ export const generateRound = async (
 		.returning();
 
 	if (!tokenARow || !tokenBRow) {
-		console.error(`${LOG} Failed to create ephemeral stream URLs`);
 		return null;
 	}
 
-	// Create opus_256 tokens for YWLT preload (2-min expiry, same as answers API)
+	// Create opus_128 tokens for YWLT preload (lower quality to deter ripping)
 	const ywltExpiresAt = new Date(Date.now() + 2 * 60 * 1000);
-	const [opus256A, opus256B] = await Promise.all([
+	const [opus128A, opus128B] = await Promise.all([
 		db
 			.select({ id: candidateFiles.id })
 			.from(candidateFiles)
@@ -253,7 +236,7 @@ export const generateRound = async (
 				and(
 					eq(candidateFiles.sourceFileId, candidateA.sourceFileId),
 					eq(candidateFiles.codec, 'opus'),
-					eq(candidateFiles.bitrate, 256)
+					eq(candidateFiles.bitrate, 128)
 				)
 			)
 			.get(),
@@ -264,7 +247,7 @@ export const generateRound = async (
 				and(
 					eq(candidateFiles.sourceFileId, candidateB.sourceFileId),
 					eq(candidateFiles.codec, 'opus'),
-					eq(candidateFiles.bitrate, 256)
+					eq(candidateFiles.bitrate, 128)
 				)
 			)
 			.get()
@@ -272,17 +255,17 @@ export const generateRound = async (
 
 	let tokenYwltA: string | null = null;
 	let tokenYwltB: string | null = null;
-	if (opus256A) {
+	if (opus128A) {
 		const [row] = await db
 			.insert(ephemeralStreamUrls)
-			.values({ candidateFileId: opus256A.id, expiresAt: ywltExpiresAt })
+			.values({ candidateFileId: opus128A.id, expiresAt: ywltExpiresAt })
 			.returning();
 		tokenYwltA = row?.token ?? null;
 	}
-	if (opus256B) {
+	if (opus128B) {
 		const [row] = await db
 			.insert(ephemeralStreamUrls)
-			.values({ candidateFileId: opus256B.id, expiresAt: ywltExpiresAt })
+			.values({ candidateFileId: opus128B.id, expiresAt: ywltExpiresAt })
 			.returning();
 		tokenYwltB = row?.token ?? null;
 	}
@@ -302,11 +285,6 @@ export const generateRound = async (
 			.where(eq(candidateFiles.id, candidateB.id))
 			.get()
 	]);
-
-	console.log(`${LOG} Round created`, {
-		tokenA: tokenARow.token.slice(0, 8) + '...',
-		tokenB: tokenBRow.token.slice(0, 8) + '...'
-	});
 
 	return {
 		tokenA: tokenARow.token,

@@ -7,7 +7,7 @@
 	export interface AudioPlayerProps {
 		srcA: string;
 		srcB: string;
-		/** Opus_256 URLs for "you were listening to" preload. Preload both; crossfade to selected on confirm. */
+		/** Opus_128 URLs for "you were listening to" preload. Preload both; crossfade to selected on confirm. */
 		srcYwltA?: string | null;
 		srcYwltB?: string | null;
 		transitionMode: TransitionMode;
@@ -117,7 +117,7 @@
 			gainNodeB.connect(masterGain);
 			gainNodeYwlt.connect(masterGain);
 
-			// Fetch comparison streams (A, B) and YWLT opus_256 in parallel
+			// Fetch comparison streams (A, B) and YWLT opus_128 in parallel
 			const fetchPromises: Promise<Response>[] = [fetch(srcA), fetch(srcB)];
 			if (srcYwltA) fetchPromises.push(fetch(srcYwltA));
 			if (srcYwltB) fetchPromises.push(fetch(srcYwltB));
@@ -676,12 +676,15 @@
 					<div class="col-start-3 row-start-3 flex items-center justify-end self-end justify-self-end md:place-self-end">
 						<Popover.Root>
 							<Popover.Trigger
+								openOnHover
+								openDelay={100}
+								closeDelay={150}
 								class="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring"
 								aria-label="Volume"
 							>
 								<Volume2Icon class="size-5" />
 							</Popover.Trigger>
-							<Popover.Content class="w-fit min-w-0 max-w-32 p-3" align="end" side="top">
+							<Popover.Content class="w-24 min-w-0 p-2" align="end" side="top">
 								<div class="flex flex-col items-center gap-2">
 									<span class="text-muted-foreground text-xs">
 										{Math.round(volume * 100)}%

@@ -4,7 +4,7 @@
 	interface Props {
 		token: string;
 		startSeconds: number;
-		/** Preloaded blob URL for opus_256; avoids fetch gap when coming from answer submit */
+		/** Preloaded blob URL for opus_128; avoids fetch gap when coming from answer submit */
 		preloadedBlobUrl?: string | null;
 	}
 
