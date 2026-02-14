@@ -66,6 +66,24 @@ Bindings in `wrangler.jsonc`:
 | `/admin/quality-options` | Toggle codec+bitrate permutations |
 | `/admin/snapshots` | View/trigger result snapshots |
 
+## Visualizations
+
+Each chart is a dedicated Svelte component in `src/lib/components/`:
+
+- **Overall stats** — Total responses, sessions, neither rate, avg response time
+- **Codec win rate bar chart** — Per-codec win rates and comparison counts
+- **Bitrate tier chart** — Win rates by tier (lossless, high, mid, low)
+- **Device distribution** — Headphones vs speakers, price tier breakdown
+- **Headline matchups** — Lossless vs lossy, Opus vs MP3, AAC vs MP3
+- **Codec matchup heatmap** — Codec×bitrate win rates (e.g. Opus vs MP3)
+- **Codec equivalence chart** — Cross-codec bitrate equivalence ratios
+- **PQ line chart** — Perceptual quality curves (Bradley-Terry derived)
+- **FLAC vs lossy chart** — Transparency by codec and bitrate
+- **Neither by bitrate diff** — Uncertainty vs bitrate gap (scatter/stacked)
+- **Genre visualizations** (when `codecPqScoresByGenre` exists): confidence band, spaghetti plot, genre×config heatmap
+
+Data comes from `result_snapshots` (scalar columns + JSON blobs). Page falls back to legacy `insights` when scalars are missing.
+
 ## Database Schema
 
 7 tables: `listening_devices`, `source_files`, `quality_options`, `candidate_files`, `ephemeral_stream_urls`, `answers`, `result_snapshots`. See `src/lib/server/db/schema.ts`.
