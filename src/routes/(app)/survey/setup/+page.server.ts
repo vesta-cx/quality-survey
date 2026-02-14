@@ -39,6 +39,7 @@ export const load: PageServerLoad = async ({ cookies, platform, url }) => {
 
 	if (deviceId && platform && !forceChange) {
 		const db = getDb(platform);
+		// Exact ID match: show details even for unapproved (user already has this device)
 		const device = await db
 			.select({
 				id: listeningDevices.id,
@@ -49,7 +50,7 @@ export const load: PageServerLoad = async ({ cookies, platform, url }) => {
 				priceTier: listeningDevices.priceTier
 			})
 			.from(listeningDevices)
-			.where(and(eq(listeningDevices.id, deviceId), isNotNull(listeningDevices.approvedAt)))
+			.where(eq(listeningDevices.id, deviceId))
 			.get();
 		if (device) {
 			existingDevice = {
@@ -98,14 +99,12 @@ export const actions = {
 
 		const db = getDb(platform);
 
-		// When client resolved a unique device, reuse it directly (no create)
+		// When client resolved a unique device by exact ID, reuse it directly (no create)
 		if (deviceId) {
 			const existing = await db
 				.select({ id: listeningDevices.id })
 				.from(listeningDevices)
-				.where(
-					and(eq(listeningDevices.id, deviceId), isNotNull(listeningDevices.approvedAt))
-				)
+				.where(eq(listeningDevices.id, deviceId))
 				.limit(1)
 				.get();
 			if (existing) {
