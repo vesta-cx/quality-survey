@@ -5,7 +5,7 @@ import type { TransitionMode } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-const LOG = '[game:play]';
+const COOKIE_SESSION = 'survey_session';
 const COOKIE_MODES = 'transition_modes';
 const COOKIE_PAIRING = 'pairing_types';
 
@@ -21,19 +21,28 @@ const parseEnabledPairing = (val: string | undefined): boolean => {
 	return val.split(',').map((s) => s.trim()).includes('different_song');
 };
 
-export const load: PageServerLoad = async ({ cookies, platform }) => {
-	console.log(`${LOG} /survey/play load()`);
+export const load: PageServerLoad = async ({ cookies, platform, locals }) => {
+	let sessionId = cookies.get(COOKIE_SESSION);
+	if (!sessionId) {
+		sessionId = crypto.randomUUID();
+		cookies.set(COOKIE_SESSION, sessionId, {
+			path: '/',
+			httpOnly: true,
+			secure: true,
+			sameSite: 'lax'
+			// No maxAge = session cookie (until browser close)
+		});
+	}
 
 	const deviceId = cookies.get('device_id');
 	if (!deviceId) {
-		console.log(`${LOG} No device_id, redirecting to setup`);
 		redirect(302, '/survey/setup');
 	}
 	if (!platform) {
-		console.error(`${LOG} Platform not available`);
 		return {
 			round: null,
 			deviceId,
+			sessionId,
 			enabledModes: [...TRANSITION_MODES] as TransitionMode[],
 			allowDifferentSong: true,
 			error: 'Platform not available'
@@ -50,23 +59,15 @@ export const load: PageServerLoad = async ({ cookies, platform }) => {
 	const round = await generateRound(db, enabledModes, enabledPairing);
 
 	if (!round) {
-		console.log(`${LOG} No round available`);
 		return {
 			round: null,
 			deviceId,
+			sessionId,
 			enabledModes: enabledModes ?? ([...TRANSITION_MODES] as TransitionMode[]),
 			allowDifferentSong,
 			error: 'No audio comparisons available yet. Check back soon!'
 		};
 	}
-
-	console.log(`${LOG} Returning round`, {
-		tokenA: round.tokenA.slice(0, 8) + '...',
-		tokenB: round.tokenB.slice(0, 8) + '...',
-		startTime: round.startTime,
-		duration: round.duration,
-		transitionMode: round.transitionMode
-	});
 
 	return {
 		round: {
@@ -81,6 +82,8 @@ export const load: PageServerLoad = async ({ cookies, platform }) => {
 			labelB: round.labelB
 		},
 		deviceId,
+		sessionId,
+		isAdmin: !!locals.session,
 		enabledModes: enabledModes ?? ([...TRANSITION_MODES] as TransitionMode[]),
 		allowDifferentSong,
 		error: null

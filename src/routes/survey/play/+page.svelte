@@ -8,7 +8,7 @@
 	import { Anchor } from '@vesta-cx/ui/components/utils/anchor';
 	import TrackLabel from '$lib/components/track-label.svelte';
 	import InfoIcon from '@lucide/svelte/icons/info';
-	import HomeIcon from '@lucide/svelte/icons/home';
+	import PowerIcon from '@lucide/svelte/icons/power';
 	let { data } = $props();
 
 	let submitting = $state(false);
@@ -26,11 +26,31 @@
 	/** Completed rounds this session (for round recap popover) */
 	let roundHistory = $state<RoundHistoryEntry[]>([]);
 
+	/** Next round at which to show an easter egg (randomized 17–23 interval per session) */
+	let nextEasterEggRound = $state(17 + Math.floor(Math.random() * 7));
+	/** Easter egg message for current summary, fetched from API when round hits threshold */
+	let easterEggMessage = $state<string | null>(null);
+	/** This round is an easter-egg round; block Next until message fetched + typewriter done */
+	let easterEggExpected = $state(false);
+	/** Typewriter: characters shown so far */
+	let easterEggDisplayedText = $state('');
+	/** Typewriter finished; Next can proceed when easter egg round */
+	let easterEggAnimationDone = $state(false);
+
 	const TRANSITION_LABELS: Record<string, string> = {
 		gapless: 'Gapless',
 		gap_continue: 'Gap (continue)',
 		gap_restart: 'Gap (restart)',
 		gap_pause_resume: 'Gap (pause/resume)'
+	};
+
+	const getTransitionLabel = (
+		mode: string,
+		labelA: { title: string; artist: string | null },
+		labelB: { title: string; artist: string | null }
+	): string => {
+		if (formatLabel(labelA) !== formatLabel(labelB)) return 'Different songs';
+		return TRANSITION_LABELS[mode] ?? mode;
 	};
 
 	const TRANSITION_TOOLTIPS: Record<string, string> = {
@@ -63,6 +83,49 @@
 		}
 	});
 
+	$effect(() => {
+		const isEasterEggRound = data.isAdmin || roundNumber === nextEasterEggRound;
+		if (!submitted || !isEasterEggRound) return;
+		easterEggExpected = true;
+		const round = roundNumber;
+		if (!data.isAdmin) {
+			nextEasterEggRound = round + 17 + Math.floor(Math.random() * 7);
+		}
+		fetch('/api/easter-egg')
+			.then((r) => r.json())
+			.then((body: { message: string | null }) => {
+				if (body.message) {
+					easterEggMessage = body.message;
+				} else {
+					easterEggAnimationDone = true;
+				}
+			})
+			.catch(() => {
+				easterEggAnimationDone = true;
+			});
+	});
+
+	$effect(() => {
+		if (!easterEggMessage) {
+			easterEggDisplayedText = '';
+			return;
+		}
+		easterEggDisplayedText = '';
+		easterEggAnimationDone = false;
+		let i = 0;
+		const delay = 45;
+		const id = setInterval(() => {
+			i += 1;
+			if (i <= easterEggMessage!.length) {
+				easterEggDisplayedText = easterEggMessage!.slice(0, i);
+			} else {
+				clearInterval(id);
+				easterEggAnimationDone = true;
+			}
+		}, delay);
+		return () => clearInterval(id);
+	});
+
 	const handleConfirm = async (
 		selected: 'a' | 'b' | 'neither',
 		playbackPositionSeconds?: number
@@ -91,12 +154,12 @@
 					segmentDuration: data.round.duration,
 					responseTime,
 					deviceId: data.deviceId,
+					sessionId: data.sessionId ?? undefined,
 					playbackPositionMs
 				})
 			});
 
 			if (!res.ok) {
-				console.error('Failed to submit answer');
 				submitting = false;
 				return;
 			}
@@ -121,8 +184,8 @@
 					streamUrlB: data.round.labelB?.streamUrl ?? null
 				}
 			];
-		} catch (e) {
-			console.error('Error submitting answer:', e);
+		} catch {
+			// Swallow; submitting = false in finally
 		} finally {
 			submitting = false;
 		}
@@ -130,14 +193,22 @@
 
 	let playbackRef: { fadeOut: () => Promise<void> } | undefined;
 
+	const canProceed = $derived(
+		!easterEggExpected || easterEggAnimationDone
+	);
+
 	const handleNext = async () => {
-		if (submitting) return;
+		if (submitting || !canProceed) return;
 		submitting = true;
+		easterEggMessage = null;
+		easterEggExpected = false;
+		easterEggDisplayedText = '';
+		easterEggAnimationDone = false;
+		submitted = null;
 		roundNumber += 1;
 		if (playbackRef) {
 			await playbackRef.fadeOut();
 		}
-		submitted = null;
 		await invalidateAll();
 		submitting = false;
 	};
@@ -158,7 +229,7 @@
 			}
 			return;
 		}
-		if ((e.key === ' ' || e.key === 'Enter') && submitted && !submitting) {
+		if ((e.key === ' ' || e.key === 'Enter') && submitted && !submitting && canProceed) {
 			e.preventDefault();
 			handleNext();
 		} else if (e.key === 'Escape') {
@@ -188,8 +259,8 @@
 			if (res.ok) {
 				await invalidateAll();
 			}
-		} catch (e) {
-			console.error('Failed to save settings:', e);
+		} catch {
+			// Swallow
 		}
 	};
 
@@ -230,7 +301,7 @@
 				<AlertDialog.Header>
 					<AlertDialog.Title>Exit game?</AlertDialog.Title>
 					<AlertDialog.Description>
-						Are you sure you wish to exit the game? Your progress will not be saved.
+						Fat-finger that Escape key? Your answers are saved—we just want to be sure you meant to leave.
 					</AlertDialog.Description>
 				</AlertDialog.Header>
 				<AlertDialog.Footer>
@@ -282,20 +353,20 @@
 						onConfirm={handleConfirm}
 					>
 						{#snippet header()}
-							<!-- Home: top-left on mobile -->
+							<!-- Quit: top-left on mobile -->
 							<button
 								type="button"
 								onclick={() => (exitDialogOpen = true)}
 								class="col-start-1 row-start-1 self-start justify-self-start text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring"
-								aria-label="Return to home"
+								aria-label="Quit"
 							>
-								<HomeIcon class="size-4" />
-								<span class="hidden sm:inline">Home</span>
+								<PowerIcon class="size-4" />
+								<span class="hidden sm:inline">Quit</span>
 							</button>
 							<!-- Title + Tooltip: top-center (row 1) -->
 							<div class="col-start-2 row-start-1 flex flex-col items-center gap-1 self-start justify-self-center">
 								<h1 class="text-center text-2xl font-bold tracking-tight">
-									Which sounds better?
+									Which do you prefer?
 								</h1>
 								<div class="flex items-center justify-center">
 								<Popover.Root>
@@ -303,7 +374,7 @@
 										class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors"
 										aria-label="Transition mode"
 									>
-										<span class="capitalize">{TRANSITION_LABELS[data.round.transitionMode] ?? data.round.transitionMode}</span>
+										<span class="capitalize">{getTransitionLabel(data.round.transitionMode, data.round.labelA, data.round.labelB)}</span>
 										<InfoIcon class="size-3.5" />
 									</Popover.Trigger>
 									<Popover.Content
@@ -391,15 +462,15 @@
 				<div
 					class="grid min-h-screen w-full grid-cols-[0.5fr_2fr_0.5fr] grid-rows-[repeat(3,minmax(0,1fr))] gap-x-4 gap-y-2 px-6 py-6 md:min-h-[min(95vh,720px)] md:grid-rows-[auto_auto_auto] md:container md:items-center md:justify-items-center [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_[role='button']]:pointer-events-auto"
 				>
-					<!-- Home: top-left (row 1) -->
+					<!-- Quit: top-left (row 1) -->
 					<button
 						type="button"
 						onclick={() => (exitDialogOpen = true)}
 						class="col-start-1 row-start-1 self-start justify-self-start text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring"
-						aria-label="Return to home"
+						aria-label="Quit"
 					>
-						<HomeIcon class="size-4" />
-						<span class="hidden sm:inline">Home</span>
+						<PowerIcon class="size-4" />
+						<span class="hidden sm:inline">Quit</span>
 					</button>
 					<!-- Round: top-right (row 1) -->
 					<Popover.Root>
@@ -470,6 +541,15 @@
 							streamUrlB={submitted.streamUrlB}
 							isDifferentSong={submitted.isDifferentSong}
 						/>
+						{#if easterEggExpected}
+							<p class="text-foreground text-sm italic">
+								{#if easterEggMessage}
+									"{easterEggDisplayedText}"
+								{:else}
+									...
+								{/if}
+							</p>
+						{/if}
 					</div>
 					<!-- Settings: bottom-left (row 3) -->
 					<div class="col-start-1 row-start-3 self-end justify-self-start">
@@ -502,7 +582,11 @@
 									arrowClasses="bg-popover"
 									class="border-border bg-popover text-popover-foreground max-w-xs border shadow-md [&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-muted [&_kbd]:px-1.5 [&_kbd]:py-0.5 [&_kbd]:font-mono [&_kbd]:text-[0.65rem] [&_kbd]:font-medium [&_kbd]:text-foreground"
 								>
+										{#if canProceed}
 										Press <kbd>Space</kbd> or <kbd>Enter</kbd> to continue
+									{:else}
+										Wait for the message to finish...
+									{/if}
 									</Tooltip.Content>
 								</Tooltip.Portal>
 							</Tooltip.Root>
@@ -511,11 +595,11 @@
 						<button
 							type="button"
 							onclick={handleNext}
-							disabled={submitting}
+							disabled={submitting || !canProceed}
 							class="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-lg px-6 py-3 text-sm font-medium transition-all disabled:opacity-50"
 							aria-label="Next comparison"
 						>
-							{submitting ? 'Loading...' : 'Next'}
+							{submitting ? 'Loading...' : !canProceed ? '...' : 'Next'}
 						</button>
 					</div>
 				</div>

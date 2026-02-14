@@ -11,15 +11,11 @@ import {
 import { DEFAULT_SEGMENT_DURATION_MS } from '$lib/server/survey-config';
 import type { RequestHandler } from './$types';
 
-const LOG = '[game:answers]';
 /** Short expiry for "you were listening to" playback token */
 const PLAYBACK_TOKEN_EXPIRY_MIN = 2;
 
 export const POST: RequestHandler = async ({ request, platform }) => {
-	console.log(`${LOG} POST /api/answers`);
-
 	if (!platform) {
-		console.error(`${LOG} Platform not available`);
 		return error(500, 'Platform not available');
 	}
 
@@ -35,6 +31,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		segmentDuration,
 		responseTime,
 		deviceId,
+		sessionId,
 		playbackPositionMs
 	} = body;
 
@@ -53,13 +50,6 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
 	const db = getDb(platform);
 
-	console.log(`${LOG} Resolving tokens`, {
-		tokenA: body.tokenA?.slice(0, 8) + '...',
-		tokenB: body.tokenB?.slice(0, 8) + '...',
-		selected: body.selected,
-		deviceId: body.deviceId?.slice(0, 8) + '...'
-	});
-
 	// Resolve tokens to candidate IDs
 	const streamA = await db
 		.select()
@@ -74,18 +64,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		.get();
 
 	if (!streamA || !streamB) {
-		console.warn(`${LOG} Tokens expired or invalid`, {
-			tokenAFound: !!streamA,
-			tokenBFound: !!streamB
-		});
 		return error(410, 'Stream tokens expired or invalid');
 	}
-
-	console.log(`${LOG} Resolved → candidates`, {
-		candidateAId: streamA.candidateFileId,
-		candidateBId: streamB.candidateFileId,
-		pairingType: streamA.candidateFileId === streamB.candidateFileId ? 'placebo' : 'same/different'
-	});
 
 	// Determine pairing type from candidate IDs
 	const candidateAId = streamA.candidateFileId;
@@ -104,6 +84,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		.insert(answers)
 		.values({
 			deviceId,
+			sessionId: sessionId ?? null,
 			candidateAId,
 			candidateBId,
 			selected,
@@ -115,7 +96,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		})
 		.returning();
 
-	// Clean up used tokens (comparison + YWLT opus_256)
+	// Clean up used tokens (comparison + YWLT opus_128)
 	await db.delete(ephemeralStreamUrls).where(eq(ephemeralStreamUrls.token, tokenA));
 	await db.delete(ephemeralStreamUrls).where(eq(ephemeralStreamUrls.token, tokenB));
 	if (tokenYwltA) {
@@ -125,7 +106,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		await db.delete(ephemeralStreamUrls).where(eq(ephemeralStreamUrls.token, tokenYwltB));
 	}
 
-	// Create playback token for opus_256 of selected source (for "you were listening to")
+	// Create playback token for opus_128 of selected source (lower quality to deter ripping)
 	let playbackToken: string | null = null;
 	const positionMs =
 		typeof playbackPositionMs === 'number' && playbackPositionMs >= 0 ? playbackPositionMs : null;
@@ -138,32 +119,27 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		.get();
 
 	if (selectedCandidate) {
-		const opus256 = await db
+		const opus128 = await db
 			.select({ id: candidateFiles.id })
 			.from(candidateFiles)
 			.where(
 				and(
 					eq(candidateFiles.sourceFileId, selectedCandidate.sourceFileId),
 					eq(candidateFiles.codec, 'opus'),
-					eq(candidateFiles.bitrate, 256)
+					eq(candidateFiles.bitrate, 128)
 				)
 			)
 			.get();
 
-		if (opus256) {
+		if (opus128) {
 			const expiresAt = new Date(Date.now() + PLAYBACK_TOKEN_EXPIRY_MIN * 60 * 1000);
 			const [row] = await db
 				.insert(ephemeralStreamUrls)
-				.values({ candidateFileId: opus256.id, expiresAt })
+				.values({ candidateFileId: opus128.id, expiresAt })
 				.returning();
 			playbackToken = row?.token ?? null;
 		}
 	}
-
-	console.log(`${LOG} Answer saved, tokens deleted`, {
-		answerId: answer?.id,
-		playbackToken: playbackToken ? 'created' : 'none'
-	});
 
 	return json({
 		id: answer?.id,
