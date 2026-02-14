@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { eq, inArray, isNull } from 'drizzle-orm';
 import { parseBlob } from 'music-metadata';
+import { formatList, parseList } from '$lib/utils/list';
 import { getDb } from '$lib/server/db';
 import { getStorage } from '$lib/server/storage';
 import {
@@ -131,11 +132,13 @@ export const actions = {
 		}
 
 		const db = getDb(platform);
+		const artistRaw = (data.get('artist') as string)?.trim() ?? '';
+		const genreRaw = (data.get('genre') as string)?.trim() ?? '';
 		const updates: Record<string, unknown> = {
 			title,
 			licenseUrl,
-			artist: (data.get('artist') as string)?.trim() || null,
-			genre: (data.get('genre') as string)?.trim() || null,
+			artist: artistRaw ? formatList(parseList(artistRaw)) : null,
+			genre: genreRaw ? formatList(parseList(genreRaw)) : null,
 			streamUrl: (data.get('stream_url') as string)?.trim() || null
 		};
 		if (duration !== undefined) updates.duration = duration;
@@ -168,7 +171,7 @@ export const actions = {
 
 		const expectedDurationMs = source.duration;
 		const expectedTitle = source.title.trim().toLowerCase();
-		const expectedArtist = (source.artist ?? '').trim().toLowerCase();
+		const expectedArtists = parseList(source.artist ?? '').map((a) => a.trim().toLowerCase()).filter(Boolean);
 
 		let added = 0;
 		const errors: string[] = [];
@@ -227,8 +230,8 @@ export const actions = {
 				errors.push(`${file.name}: title "${fileTitle}" doesn't match source "${expectedTitle}"`);
 				continue;
 			}
-			if (expectedArtist && fileArtist && fileArtist !== expectedArtist) {
-				errors.push(`${file.name}: artist "${fileArtist}" doesn't match source "${expectedArtist}"`);
+			if (expectedArtists.length > 0 && fileArtist && !expectedArtists.includes(fileArtist)) {
+				errors.push(`${file.name}: artist "${fileArtist}" doesn't match source "${(source.artist ?? '').trim()}"`);
 				continue;
 			}
 
@@ -533,8 +536,8 @@ export const actions = {
 
 				const updateFields: Record<string, unknown> = {
 					title: title.trim(),
-					artist: artist?.trim() || null,
-					genre: genre?.trim() || null,
+					artist: artist?.trim() ? formatList(parseList(artist)) : null,
+					genre: genre?.trim() ? formatList(parseList(genre)) : null,
 					licenseUrl: effectiveLicense
 				};
 				const effectiveStreamUrl = (streamUrl?.trim() || sharedStreamUrl)?.trim();
@@ -599,8 +602,8 @@ export const actions = {
 						licenseUrl: effectiveLicense,
 						streamUrl: effectiveStreamUrl,
 						title: title.trim(),
-						artist: artist?.trim() || null,
-						genre: genre?.trim() || null,
+						artist: artist?.trim() ? formatList(parseList(artist)) : null,
+						genre: genre?.trim() ? formatList(parseList(genre)) : null,
 						duration: durationMsFinal
 					})
 					.returning();
@@ -759,8 +762,8 @@ export const actions = {
 					.update(sourceFiles)
 					.set({
 						title,
-						artist: artist || null,
-						genre: genre || null,
+						artist: artist?.trim() ? formatList(parseList(artist)) : null,
+						genre: genre?.trim() ? formatList(parseList(genre)) : null,
 						licenseUrl,
 						streamUrl: streamUrl?.trim() || null,
 						duration
@@ -807,8 +810,8 @@ export const actions = {
 				licenseUrl,
 				streamUrl: streamUrl || null,
 				title,
-				artist: artist || null,
-				genre: genre || null,
+				artist: artist?.trim() ? formatList(parseList(artist)) : null,
+				genre: genre?.trim() ? formatList(parseList(genre)) : null,
 				duration: durationMsFinal
 			});
 			return { success: true, created: 1, merged: 0 };

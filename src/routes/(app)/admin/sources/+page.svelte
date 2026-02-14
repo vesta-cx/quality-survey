@@ -168,8 +168,8 @@
 					const metadata = await parseBlob(metaCandidate);
 					const { common, format } = metadata;
 					if (common.title) title = common.title;
-					if (common.artist) artist = common.artist;
-					if (common.genre?.[0]) genre = common.genre[0];
+					if (common.artist) artist = Array.isArray(common.artist) ? common.artist.join(', ') : common.artist;
+					if (common.genre?.length) genre = common.genre.filter(Boolean).join(', ');
 					if (format.duration) durationMs = Math.round(format.duration * 1000);
 					metadataSource = metaCandidate.name;
 				} catch {
@@ -549,7 +549,7 @@
 												id="artist-{i}"
 												type="text"
 												bind:value={track.artist}
-												placeholder="Artist"
+												placeholder="Artist A, Artist B"
 												class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
 											/>
 										</div>
@@ -559,7 +559,7 @@
 												id="genre-{i}"
 												type="text"
 												bind:value={track.genre}
-												placeholder="Genre"
+												placeholder="jazz, electronic"
 												class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
 											/>
 										</div>
@@ -902,6 +902,7 @@
 															name="artist"
 															type="text"
 															value={source.artist ?? ''}
+															placeholder="Artist A, Artist B"
 															class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
 														/>
 													</div>
@@ -912,6 +913,7 @@
 															name="genre"
 															type="text"
 															value={source.genre ?? ''}
+															placeholder="jazz, electronic"
 															class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
 														/>
 													</div>

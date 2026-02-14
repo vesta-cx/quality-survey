@@ -22,10 +22,12 @@
 	import PqConfidenceBandChart from '$lib/components/pq-confidence-band-chart.svelte';
 	import PqSpaghettiChart from '$lib/components/pq-spaghetti-chart.svelte';
 	import GenreHeatmapChart from '$lib/components/genre-heatmap-chart.svelte';
+	import { pageTitle } from '$lib/constants/identity';
 
 	let { data } = $props();
 
 	const snapshot = $derived(data.snapshot);
+	const contentLibrary = $derived(data.contentLibrary);
 	const insights = $derived(snapshot?.insights as Record<string, unknown> | null);
 
 	// Extract chart data from insights
@@ -63,7 +65,7 @@
 </script>
 
 <svelte:head>
-	<title>Quality Survey — Can you hear the difference?</title>
+	<title>{pageTitle()}</title>
 	<meta
 		name="description"
 		content="Put your ears to the test, and help us build better streaming. Blind A/B audio comparisons."
@@ -115,6 +117,11 @@
 				<p class="text-muted-foreground mt-2">
 					Based on {snapshot.totalResponses.toLocaleString()} blind comparisons
 				</p>
+				{#if contentLibrary && contentLibrary.songCount > 0}
+					<p class="text-muted-foreground mt-1 text-sm">
+						Content library: {contentLibrary.songCount} {contentLibrary.songCount === 1 ? 'song' : 'songs'} from {contentLibrary.artistCount} {contentLibrary.artistCount === 1 ? 'artist' : 'artists'}
+					</p>
+				{/if}
 			</div>
 
 			<div class="mb-8">

@@ -1,4 +1,5 @@
 import { eq, lt } from 'drizzle-orm';
+import { parseList } from '$lib/utils/list';
 import type { Database } from './db';
 import {
 	answers,
@@ -60,17 +61,17 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		return c;
 	};
 
-	const sourceGenreCache = new Map<string, string | null>();
-	const loadSourceGenre = async (sourceFileId: string): Promise<string | null> => {
+	const sourceGenreCache = new Map<string, string[]>();
+	const loadSourceGenres = async (sourceFileId: string): Promise<string[]> => {
 		if (sourceGenreCache.has(sourceFileId)) return sourceGenreCache.get(sourceFileId)!;
 		const row = await db
 			.select({ genre: sourceFiles.genre })
 			.from(sourceFiles)
 			.where(eq(sourceFiles.id, sourceFileId))
 			.get();
-		const genre = row?.genre?.toLowerCase().trim() ?? null;
-		sourceGenreCache.set(sourceFileId, genre);
-		return genre;
+		const genres = parseList(row?.genre ?? '').map((g) => g.toLowerCase().trim()).filter(Boolean);
+		sourceGenreCache.set(sourceFileId, genres);
+		return genres;
 	};
 
 	let neitherCount = 0;
@@ -118,11 +119,9 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		const candB = await loadCandidate(answer.candidateBId);
 		if (!candA || !candB) continue;
 
-		const genreA = await loadSourceGenre(candA.sourceFileId);
-		const genreB = await loadSourceGenre(candB.sourceFileId);
-		const genres = new Set<string>();
-		if (genreA) genres.add(genreA);
-		if (genreB) genres.add(genreB);
+		const genresA = await loadSourceGenres(candA.sourceFileId);
+		const genresB = await loadSourceGenres(candB.sourceFileId);
+		const genres = new Set([...genresA, ...genresB]);
 
 		const keyA = `${candA.codec}_${candA.bitrate}`;
 		const keyB = `${candB.codec}_${candB.bitrate}`;

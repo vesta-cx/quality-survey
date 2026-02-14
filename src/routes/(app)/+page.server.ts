@@ -1,11 +1,12 @@
-import { desc } from 'drizzle-orm';
+import { desc, isNotNull } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
-import { resultSnapshots } from '$lib/server/db/schema';
+import { resultSnapshots, sourceFiles } from '$lib/server/db/schema';
+import { parseList } from '$lib/utils/list';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ platform }) => {
 	if (!platform) {
-		return { snapshot: null };
+		return { snapshot: null, contentLibrary: null };
 	}
 
 	try {
@@ -18,7 +19,30 @@ export const load: PageServerLoad = async ({ platform }) => {
 			.limit(1)
 			.get();
 
+		// Content library stats (approved sources only)
+		let contentLibrary: { songCount: number; artistCount: number } | null = null;
+		try {
+			const approved = await db
+				.select({ artist: sourceFiles.artist })
+				.from(sourceFiles)
+				.where(isNotNull(sourceFiles.approvedAt))
+				.all();
+			const uniqueArtists = new Set<string>();
+			for (const row of approved) {
+				for (const a of parseList(row.artist ?? '')) {
+					if (a) uniqueArtists.add(a);
+				}
+			}
+			contentLibrary = {
+				songCount: approved.length,
+				artistCount: uniqueArtists.size
+			};
+		} catch {
+			// source_files may not exist
+		}
+
 		return {
+			contentLibrary,
 			snapshot: snapshot
 				? {
 						createdAt: snapshot.createdAt?.toISOString() ?? null,
@@ -77,6 +101,6 @@ export const load: PageServerLoad = async ({ platform }) => {
 		};
 	} catch {
 		// Table may not exist yet (no migrations applied), or DB is empty
-		return { snapshot: null };
+		return { snapshot: null, contentLibrary: null };
 	}
 };

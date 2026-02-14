@@ -79,12 +79,11 @@ export const sourceFiles = sqliteTable('source_files', {
 	approvedBy: text('approved_by'),
 	title: text('title').notNull(),
 	streamUrl: text('stream_url'),
+	/** Comma-separated artists (e.g. "Artist A, Artist B"). */
 	artist: text('artist'),
 	artistUrl: text('artist_url'),
-	/** Primary genre. Prefer values from GENRES for segment analysis. */
+	/** Comma-separated genres. Prefer values from GENRES for segment analysis. */
 	genre: text('genre'),
-	/** Secondary genre (e.g. "jazz" for "jazz-fusion"). Enables richer genre-based PQ. */
-	genreSecondary: text('genre_secondary'),
 	duration: integer('duration').notNull() // total duration in ms
 });
 
