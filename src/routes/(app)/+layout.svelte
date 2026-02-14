@@ -9,6 +9,7 @@
 	import { CookieConsentDialog } from '@vesta-cx/ui/components/utils/cookie-consent-dialog';
 	import { ThemeSwitcher } from '@vesta-cx/ui/components/utils/theme-switcher';
 	import type { VendorDefinition } from '@vesta-cx/utils/cookies';
+	import { SITE_NAME } from '$lib/constants/identity';
 	import VestaFooter from './footer.svelte';
 
 	let { children } = $props();
@@ -28,7 +29,7 @@
 {#if !isAdmin}
 	<Header class="z-50">
 		<HeaderLogo class="flex items-center gap-2">
-			<a href="/" class="text-sm font-bold tracking-tight">Quality Survey</a>
+			<a href="/" class="text-sm font-bold tracking-tight">{SITE_NAME}</a>
 		</HeaderLogo>
 		<HeaderActions>
 			<ThemeSwitcher.Root variant="dropdown" />
