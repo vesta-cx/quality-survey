@@ -1,5 +1,4 @@
 import type { Handle } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
 import { createAuthHandle } from '@vesta-cx/utils/auth';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 
@@ -17,4 +16,13 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 		});
 	});
 
-export const handle = sequence(handleAuth, handleParaglide);
+// Manual composition instead of sequence() — avoids "Could not get the request store" in SvelteKit 2.51+
+export const handle: Handle = async ({ event, resolve }) =>
+	handleAuth({
+		event,
+		resolve: (e, opts) =>
+			handleParaglide({
+				event: e,
+				resolve: (e2, opts2) => resolve(e2, opts2)
+			})
+	});
