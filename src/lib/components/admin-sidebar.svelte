@@ -13,6 +13,7 @@
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import TableIcon from '@lucide/svelte/icons/table';
 	import ScaleIcon from '@lucide/svelte/icons/scale';
+	import EggIcon from '@lucide/svelte/icons/egg';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 
@@ -28,6 +29,7 @@
 		{ href: '/admin/devices', label: 'Devices', icon: SmartphoneIcon },
 		{ href: '/admin/sources', label: 'Sources', icon: FolderIcon },
 		{ href: '/admin/quality-options', label: 'Quality Options', icon: SlidersHorizontalIcon },
+		{ href: '/admin/easter-eggs', label: 'Easter Eggs', icon: EggIcon },
 		{ href: '/admin/snapshots', label: 'Snapshots', icon: CameraIcon },
 		{ href: '/admin/storage', label: 'R2 Storage', icon: DatabaseIcon },
 		{ href: '/admin/db', label: 'Database', icon: TableIcon },
