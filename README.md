@@ -48,6 +48,38 @@ Bindings in `wrangler.jsonc`:
 - `DB` — D1 database
 - `AUDIO_BUCKET` — R2 bucket for audio files
 
+### Wrangler environments (dev vs production)
+
+The config defines two environments so dev and production use separate D1 and R2 instances (no orphan objects).
+
+- **Default** — Production: `vesta-sona-db`, `vesta-sona-audio`
+- **`dev`** — Development: `vesta-sona-db-dev`, `vesta-sona-audio-dev`
+
+To bootstrap the dev env:
+
+```bash
+# Create dev D1 database (then set database_id in wrangler.jsonc env.dev.d1_databases)
+pnpm wrangler d1 create vesta-sona-db-dev
+
+# Create vesta-sona-audio-dev bucket in Cloudflare dashboard, or via R2 API
+
+# Apply migrations to dev D1
+pnpm db:migrate:dev
+```
+
+Commands: `pnpm preview:dev` (wrangler dev with dev env), `pnpm deploy:dev` (deploy to dev worker).
+
+### Cron trigger (snapshot every 6 hours)
+
+A custom `worker.ts` entry wraps the SvelteKit output and adds a `scheduled` handler for the cron trigger. Snapshots run at 0:00, 6:00, 12:00, 18:00 UTC.
+
+To test locally:
+
+```bash
+pnpm preview -- --test-scheduled
+# Then: curl "http://localhost:8787/__scheduled?cron=0+*+*+*+*"
+```
+
 ## Routes
 
 | Route | Description |
@@ -65,6 +97,7 @@ Bindings in `wrangler.jsonc`:
 | `/admin/devices` | Manage listening devices |
 | `/admin/sources` | Upload and manage source audio |
 | `/admin/quality-options` | Toggle codec+bitrate permutations |
+| `/admin/pairing-weights` | Pairing weights, placebo rate, permutation/transition/mode weights, Tradeoff gap config |
 | `/admin/snapshots` | View/trigger result snapshots |
 
 ## Visualizations
@@ -83,7 +116,7 @@ Each chart is a dedicated Svelte component in `src/lib/components/`:
 - **Neither by bitrate diff** — Uncertainty vs bitrate gap (scatter/stacked)
 - **Genre visualizations** (when `codecPqScoresByGenre` exists): confidence band, spaghetti plot, genre×config heatmap
 
-Data comes from `result_snapshots` (scalar columns + JSON blobs). Page falls back to legacy `insights` when scalars are missing.
+Data comes from `result_snapshots` (scalar columns + JSON blobs). Page falls back to legacy `insights` when scalars are missing. Snapshot stats include sourceset counts, per-mode metrics (rounds, win rate, neither rate, avg response time), top genres/artists/songs/codecs, and source coverage.
 
 ## Database Schema
 
@@ -93,15 +126,9 @@ Data comes from `result_snapshots` (scalar columns + JSON blobs). Page falls bac
 
 Use the admin panel at `/admin/quality-options` and click "Seed Defaults" to populate the standard codec+bitrate matrix (flac/0, opus/mp3/aac at 320-32 kbps).
 
-## Pre-transcoding Audio
+## Uploading Audio
 
-Use the monorepo script to generate all codec permutations from lossless input:
-
-```bash
-./tools/scripts/audio/generate-permutations.sh -i input.flac -o output/
-```
-
-Upload the output directory via the admin panel's "Upload Directory" feature.
+Use the admin sources page at `/admin/sources` to upload lossless audio (FLAC, WAV, AIFF, ALAC). Each file is sent to **Euterpe** for transcoding to FLAC, Opus@128, and Opus@96. Sources are created immediately with metadata; `r2_key` and duration are filled when the webhook fires after transcoding. Multi-file and recursive folder upload are supported. Metadata (title, artist, remixer, genre, license URL, stream URL) is auto-extracted from file tags where available.
 
 ## Todos
 

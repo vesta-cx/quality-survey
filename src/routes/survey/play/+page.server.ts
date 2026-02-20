@@ -51,9 +51,9 @@ export const load: PageServerLoad = async ({ cookies, platform, locals }) => {
 
 	const enabledModes = parseEnabledModes(cookies.get(COOKIE_MODES));
 	const allowDifferentSong = parseEnabledPairing(cookies.get(COOKIE_PAIRING));
-	const enabledPairing: (typeof import('$lib/server/db/schema').PairingType)[] = allowDifferentSong
-		? ['same_song', 'different_song', 'placebo']
-		: ['same_song', 'placebo'];
+	const enabledPairing: ('same_song' | 'different_song')[] = allowDifferentSong
+		? ['same_song', 'different_song']
+		: ['same_song'];
 
 	const db = getDb(platform);
 	const round = await generateRound(db, enabledModes, enabledPairing);
@@ -76,6 +76,7 @@ export const load: PageServerLoad = async ({ cookies, platform, locals }) => {
 			tokenYwltA: round.tokenYwltA,
 			tokenYwltB: round.tokenYwltB,
 			transitionMode: round.transitionMode,
+			roundMode: round.roundMode,
 			startTime: round.startTime,
 			duration: round.duration,
 			labelA: round.labelA,

@@ -14,6 +14,12 @@ declare global {
 				PRIVATE_WORKOS_API_KEY: string;
 				PRIVATE_WORKOS_ORG_ID: string;
 				PRIVATE_WORKOS_COOKIE_PASSWORD: string;
+				EUTERPE_URL?: string;
+				PRIVATE_EUTERPE_API_KEY?: string;
+				PRIVATE_R2_ACCOUNT_ID?: string;
+				PRIVATE_R2_ACCESS_KEY_ID?: string;
+				PRIVATE_R2_SECRET_ACCESS_KEY?: string;
+				PRIVATE_R2_BUCKET?: string;
 			};
 			cf: IncomingRequestCfProperties;
 			ctx: ExecutionContext;

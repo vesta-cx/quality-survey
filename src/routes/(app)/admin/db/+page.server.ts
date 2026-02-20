@@ -124,7 +124,9 @@ export const actions = {
 		if (selected.has('source_files')) {
 			const sources = await db.select({ id: sourceFiles.id, r2Key: sourceFiles.r2Key }).from(sourceFiles).all();
 			for (const s of sources) {
-				try { await storage.delete(s.r2Key); } catch { /* ignore */ }
+				if (s.r2Key) {
+					try { await storage.delete(s.r2Key); } catch { /* ignore */ }
+				}
 			}
 			await db.delete(sourceFiles);
 			cleared.push('source_files');

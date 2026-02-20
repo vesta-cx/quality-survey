@@ -16,26 +16,26 @@
 
 	const handleCreateResult = (opts: {
 		result?: { type?: string; data?: { success?: boolean } };
-		update?: () => Promise<void>;
+		update?: (options?: { reset?: boolean }) => Promise<void>;
 	}) => {
 		if (opts?.result?.type === 'success' && opts?.result?.data?.success) {
 			toast.success('Easter egg added');
 			addDialogOpen = false;
 			newMessage = '';
 		}
-		opts?.update?.();
+		opts?.update?.({ reset: false });
 	};
 
 	const handleUpdateResult = (opts: {
 		result?: { type?: string; data?: { success?: boolean } };
-		update?: () => Promise<void>;
+		update?: (options?: { reset?: boolean }) => Promise<void>;
 	}) => {
 		if (opts?.result?.type === 'success' && opts?.result?.data?.success) {
 			toast.success('Easter egg updated');
 			editDialogOpen = false;
 			editingMessage = null;
 		}
-		opts?.update?.();
+		opts?.update?.({ reset: false });
 	};
 
 	const handleDeleteResult = (opts: {

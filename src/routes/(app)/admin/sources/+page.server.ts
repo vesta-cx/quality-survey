@@ -1,6 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, inArray, isNull } from 'drizzle-orm';
-import { parseBlob } from 'music-metadata';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { formatList, parseList } from '$lib/utils/list';
 import { getDb } from '$lib/server/db';
 import { getStorage } from '$lib/server/storage';
@@ -8,38 +7,15 @@ import {
 	sourceFiles,
 	candidateFiles,
 	ephemeralStreamUrls,
-	answers,
-	CODECS
+	answers
 } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
-const DURATION_TOLERANCE_MS = 500; // Allow ±500ms for different codecs
+const LOSSLESS_EXTS = new Set(['.flac', '.wav', '.aiff', '.alac', '.aif']);
 
-const BASENAME_REGEX = /^(.+)_(flac|opus|mp3|aac)_(\d+)\.[a-z0-9]+$/i;
-
-/** Sanitize a string for use in R2 object keys (filename-safe, no path separators). */
-function slugForR2(s: string): string {
-	return s
-		.replace(/[/\\:*?"<>|\s]+/g, '_')
-		.replace(/_+/g, '_')
-		.replace(/^_|_$/g, '')
-		|| 'unnamed';
-}
-
-type TrackMeta = {
-	basename: string;
-	title: string;
-	artist: string;
-	genre: string;
-	licenseUrl: string;
-	streamUrl: string;
-	durationMs: number | null;
-};
-
-function extractBasename(path: string): string | null {
-	const filename = (path.split(/[/\\]/).pop() ?? '').trim();
-	const match = filename.match(BASENAME_REGEX);
-	return match ? match[1] ?? null : null;
+function isLossless(name: string): boolean {
+	const lower = name.toLowerCase();
+	return [...LOSSLESS_EXTS].some((ext) => lower.endsWith(ext));
 }
 
 export const load: PageServerLoad = async ({ platform }) => {
@@ -63,6 +39,113 @@ export const load: PageServerLoad = async ({ platform }) => {
 };
 
 export const actions = {
+	uploadRawFlac: async ({ request, platform }) => {
+		if (!platform) return fail(500, { error: 'Platform not available' });
+		const euterpeUrl = platform.env.EUTERPE_URL;
+		const apiKey = platform.env.PRIVATE_EUTERPE_API_KEY;
+		const r2AccountId = platform.env.PRIVATE_R2_ACCOUNT_ID;
+		const r2AccessKeyId = platform.env.PRIVATE_R2_ACCESS_KEY_ID;
+		const r2SecretAccessKey = platform.env.PRIVATE_R2_SECRET_ACCESS_KEY;
+		const r2Bucket = platform.env.PRIVATE_R2_BUCKET ?? 'vesta-sona-audio';
+		if (!euterpeUrl || !apiKey) {
+			return fail(503, {
+				error: 'Euterpe not configured (EUTERPE_URL, PRIVATE_EUTERPE_API_KEY)'
+			});
+		}
+		if (!r2AccountId || !r2AccessKeyId || !r2SecretAccessKey) {
+			return fail(503, {
+				error: 'R2 S3 API not configured (PRIVATE_R2_ACCOUNT_ID, PRIVATE_R2_ACCESS_KEY_ID, PRIVATE_R2_SECRET_ACCESS_KEY)'
+			});
+		}
+
+		const data = await request.formData();
+		const file = data.get('file');
+		if (!file || !(file instanceof File)) return fail(400, { error: 'Missing file' });
+		if (!isLossless(file.name)) {
+			return fail(400, { error: 'Only lossless formats accepted (FLAC, WAV, AIFF, ALAC)' });
+		}
+
+		const title = (data.get('title') as string)?.trim() ?? '';
+		const artist = (data.get('artist') as string)?.trim() ?? '';
+		const featuredArtistsRaw = (data.get('featured_artists') as string)?.trim() ?? '';
+		const remixArtistsRaw = (data.get('remix_artists') as string)?.trim() ?? '';
+		const licenseUrl = (data.get('license_url') as string)?.trim() ?? '';
+		const genre = (data.get('genre') as string)?.trim() ?? '';
+		const streamUrl = (data.get('stream_url') as string)?.trim() ?? '';
+
+		if (!title || !licenseUrl) return fail(400, { error: 'Title and license URL required' });
+
+		const baseUrl = new URL(request.url).origin;
+		const webhookUrl = `${baseUrl}/api/webhooks/euterpe-complete`;
+
+		const filename = title
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '_')
+			.replace(/^_|_$/g, '')
+			|| 'audio';
+
+		const sourceFileId = crypto.randomUUID();
+		const db = getDb(platform);
+
+		await db.insert(sourceFiles).values({
+			id: sourceFileId,
+			title,
+			artist: artist ? formatList(parseList(artist)) : null,
+			featuredArtists: featuredArtistsRaw ? formatList(parseList(featuredArtistsRaw)) : null,
+			remixArtists: remixArtistsRaw ? formatList(parseList(remixArtistsRaw)) : null,
+			licenseUrl,
+			genre: genre || null,
+			streamUrl: streamUrl || null
+			// r2Key, basename, duration: null until webhook
+		});
+
+		const config = JSON.stringify({
+			targets: [
+				{ codec: 'flac', bitrate: 0 },
+				{ codec: 'opus', bitrate: 128 },
+				{ codec: 'opus', bitrate: 96 }
+			],
+			filename,
+			uploadPrefix: '',
+			webhookUrl,
+			sourceFileId,
+			storage: {
+				type: 'r2',
+				accountId: r2AccountId,
+				bucket: r2Bucket,
+				accessKeyId: r2AccessKeyId,
+				secretAccessKey: r2SecretAccessKey
+			}
+		});
+
+		const form = new FormData();
+		form.append('file', file);
+		form.append('config', config);
+
+		const res = await fetch(`${euterpeUrl.replace(/\/$/, '')}/transcode`, {
+			method: 'POST',
+			headers: { Authorization: `Bearer ${apiKey}` },
+			body: form
+		});
+
+		if (!res.ok) {
+			// Rollback: delete the source_files row we created
+			await db.delete(sourceFiles).where(eq(sourceFiles.id, sourceFileId));
+			const err = await res.text();
+			return fail(res.status === 401 ? 401 : 502, {
+				error: err || `Euterpe error: ${res.status}`
+			});
+		}
+
+		const body = (await res.json()) as { jobId?: string };
+		if (!body?.jobId) {
+			await db.delete(sourceFiles).where(eq(sourceFiles.id, sourceFileId));
+			return fail(502, { error: 'No jobId from euterpe' });
+		}
+
+		return { type: 'uploadRawFlac' as const, jobId: body.jobId };
+	},
+
 	approve: async ({ request, platform }) => {
 		if (!platform) return fail(500, { error: 'Platform not available' });
 
@@ -71,6 +154,12 @@ export const actions = {
 		if (!id) return fail(400, { error: 'Missing source ID' });
 
 		const db = getDb(platform);
+		const [source] = await db.select().from(sourceFiles).where(eq(sourceFiles.id, id));
+		if (!source) return fail(404, { error: 'Source not found' });
+		if (!source.r2Key || source.duration == null) {
+			return fail(400, { error: 'Cannot approve: transcoding not complete yet' });
+		}
+
 		await db
 			.update(sourceFiles)
 			.set({ approvedAt: new Date(), approvedBy: 'admin' })
@@ -133,11 +222,15 @@ export const actions = {
 
 		const db = getDb(platform);
 		const artistRaw = (data.get('artist') as string)?.trim() ?? '';
+		const featuredArtistsRaw = (data.get('featured_artists') as string)?.trim() ?? '';
+		const remixArtistsRaw = (data.get('remix_artists') as string)?.trim() ?? '';
 		const genreRaw = (data.get('genre') as string)?.trim() ?? '';
 		const updates: Record<string, unknown> = {
 			title,
 			licenseUrl,
 			artist: artistRaw ? formatList(parseList(artistRaw)) : null,
+			featuredArtists: featuredArtistsRaw ? formatList(parseList(featuredArtistsRaw)) : null,
+			remixArtists: remixArtistsRaw ? formatList(parseList(remixArtistsRaw)) : null,
 			genre: genreRaw ? formatList(parseList(genreRaw)) : null,
 			streamUrl: (data.get('stream_url') as string)?.trim() || null
 		};
@@ -148,115 +241,6 @@ export const actions = {
 		return { success: true };
 	},
 
-	uploadCandidates: async ({ request, platform }) => {
-		if (!platform) return fail(500, { error: 'Platform not available' });
-
-		const formData = await request.formData();
-		const sourceId = formData.get('source_id') as string;
-		const files = formData.getAll('files') as File[];
-		if (!sourceId || !files.length) return fail(400, { error: 'Missing source or files' });
-
-		const db = getDb(platform);
-		const storage = getStorage(platform);
-
-		const [source] = await db.select().from(sourceFiles).where(eq(sourceFiles.id, sourceId));
-		if (!source) return fail(404, { error: 'Source not found' });
-
-		const existingCandidates = await db
-			.select({ codec: candidateFiles.codec, bitrate: candidateFiles.bitrate })
-			.from(candidateFiles)
-			.where(eq(candidateFiles.sourceFileId, sourceId))
-			.all();
-		const existingKeys = new Set(existingCandidates.map((c) => `${c.codec}_${c.bitrate}`));
-
-		const expectedDurationMs = source.duration;
-		const expectedTitle = source.title.trim().toLowerCase();
-		const expectedArtists = parseList(source.artist ?? '').map((a) => a.trim().toLowerCase()).filter(Boolean);
-
-		let added = 0;
-		const errors: string[] = [];
-
-		const sourceBasename = source.basename?.trim().toLowerCase();
-
-		for (const file of files) {
-			if (!(file instanceof File) || file.size === 0) continue;
-
-			const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
-			const basename = extractBasename(path);
-			if (!basename) {
-				errors.push(`${file.name}: invalid filename (expected basename_codec_bitrate.ext)`);
-				continue;
-			}
-
-			if (sourceBasename && basename.toLowerCase() !== sourceBasename) {
-				errors.push(`${file.name}: basename "${basename}" doesn't match source "${source.basename}"`);
-				continue;
-			}
-
-			const filename = path.split('/').pop() ?? path;
-			const match = filename.match(/_([a-z]+)_(\d+)\.[a-z0-9]+$/i);
-			if (!match) continue;
-
-			const codec = match[1] as (typeof CODECS)[number];
-			const bitrate = parseInt(match[2] ?? '0', 10);
-			if (!CODECS.includes(codec)) continue;
-
-			if (existingKeys.has(`${codec}_${bitrate}`)) continue;
-
-			let durationMs: number | null = null;
-			let fileTitle: string | null = null;
-			let fileArtist: string | null = null;
-			try {
-				const meta = await parseBlob(file);
-				if (meta.format.duration) durationMs = Math.round(meta.format.duration * 1000);
-				fileTitle = meta.common.title?.trim().toLowerCase() ?? null;
-				fileArtist = (meta.common.artist ?? '').trim().toLowerCase() || null;
-			} catch {
-				errors.push(`${file.name}: could not read metadata`);
-				continue;
-			}
-
-			if (durationMs != null) {
-				const diff = Math.abs(durationMs - expectedDurationMs);
-				if (diff > DURATION_TOLERANCE_MS) {
-					errors.push(
-						`${file.name}: duration ${Math.round(durationMs / 1000)}s doesn't match source ${Math.round(expectedDurationMs / 1000)}s (tolerance ±${DURATION_TOLERANCE_MS}ms)`
-					);
-					continue;
-				}
-			}
-
-			if (expectedTitle && fileTitle && fileTitle !== expectedTitle) {
-				errors.push(`${file.name}: title "${fileTitle}" doesn't match source "${expectedTitle}"`);
-				continue;
-			}
-			if (expectedArtists.length > 0 && fileArtist && !expectedArtists.includes(fileArtist)) {
-				errors.push(`${file.name}: artist "${fileArtist}" doesn't match source "${(source.artist ?? '').trim()}"`);
-				continue;
-			}
-
-			const candidateSlug = slugForR2(filename);
-			const candidateR2Key = `candidates/${sourceId}/${candidateSlug}`;
-			const buffer = await file.arrayBuffer();
-			await storage.put(candidateR2Key, buffer, file.type || 'application/octet-stream');
-
-			await db.insert(candidateFiles).values({
-				r2Key: candidateR2Key,
-				codec,
-				bitrate,
-				sourceFileId: sourceId
-			});
-			existingKeys.add(`${codec}_${bitrate}`);
-			added++;
-		}
-
-		if (added === 0 && errors.length > 0) {
-			return fail(400, { error: errors.join('; ') });
-		}
-
-		return { success: true, added, errors: errors.length > 0 ? errors : undefined };
-	},
-
 	approveBulk: async ({ request, platform }) => {
 		if (!platform) return fail(500, { error: 'Platform not available' });
 
@@ -265,14 +249,19 @@ export const actions = {
 		if (!ids.length) return fail(400, { error: 'No sources selected' });
 
 		const db = getDb(platform);
-		for (const id of ids) {
-			await db
-				.update(sourceFiles)
-				.set({ approvedAt: new Date(), approvedBy: 'admin' })
-				.where(eq(sourceFiles.id, id));
-		}
+		const updated = await db
+			.update(sourceFiles)
+			.set({ approvedAt: new Date(), approvedBy: 'admin' })
+			.where(
+				and(
+					inArray(sourceFiles.id, ids),
+					isNotNull(sourceFiles.r2Key),
+					isNotNull(sourceFiles.duration)
+				)
+			)
+			.returning({ id: sourceFiles.id });
 
-		return { success: true, approved: ids.length };
+		return { success: true, approved: updated.length };
 	},
 
 	remove: async ({ request, platform }) => {
@@ -328,10 +317,12 @@ export const actions = {
 			await db.delete(candidateFiles).where(eq(candidateFiles.sourceFileId, id));
 		}
 
-		try {
-			await storage.delete(source.r2Key);
-		} catch {
-			// Ignore R2 delete errors
+		if (source.r2Key) {
+			try {
+				await storage.delete(source.r2Key);
+			} catch {
+				// Ignore R2 delete errors
+			}
 		}
 		await db.delete(sourceFiles).where(eq(sourceFiles.id, id));
 
@@ -393,10 +384,12 @@ export const actions = {
 				await db.delete(candidateFiles).where(eq(candidateFiles.sourceFileId, id));
 			}
 
-			try {
-				await storage.delete(source.r2Key);
-			} catch {
-				// ignore
+			if (source.r2Key) {
+				try {
+					await storage.delete(source.r2Key);
+				} catch {
+					// ignore
+				}
 			}
 			await db.delete(sourceFiles).where(eq(sourceFiles.id, id));
 			removed++;
@@ -411,457 +404,4 @@ export const actions = {
 		return { success: true, removed, partial: errors.length > 0 };
 	},
 
-	/**
-	 * Upload a pre-transcoded directory with per-track metadata.
-	 * Expects files in the structure: {codec}/{name}_{codec}_{bitrate}.{ext}
-	 * The FLAC file becomes the source_files entry. Multiple tracks supported.
-	 */
-		uploadDirectory: async ({ request, platform }) => {
-		if (!platform) return fail(500, { error: 'Platform not available' });
-
-		const formData = await request.formData();
-		const sharedLicenseUrl = (formData.get('license_url') as string)?.trim() ?? '';
-		const sharedStreamUrl = (formData.get('stream_url') as string)?.trim() ?? '';
-		const tracksRaw = formData.get('tracks') as string | null;
-		const files = formData.getAll('files') as File[];
-
-		if (!tracksRaw || files.length === 0) {
-			return fail(400, { error: 'Select a directory and fill in track metadata' });
-		}
-
-		let trackMetas: TrackMeta[];
-		try {
-			trackMetas = JSON.parse(tracksRaw) as TrackMeta[];
-			if (!Array.isArray(trackMetas) || trackMetas.length === 0) {
-				return fail(400, { error: 'No track metadata' });
-			}
-		} catch {
-			return fail(400, { error: 'Invalid track metadata' });
-		}
-
-		const db = getDb(platform);
-		const storage = getStorage(platform);
-
-		// Group uploaded files by basename
-		const byBasename = new Map<string, File[]>();
-		for (const file of files) {
-			const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
-			const basename = extractBasename(path);
-			if (!basename) continue;
-			const group = byBasename.get(basename) ?? [];
-			group.push(file);
-			byBasename.set(basename, group);
-		}
-
-		let created = 0;
-		let merged = 0;
-
-		for (const meta of trackMetas) {
-			const { basename, title, artist, genre, licenseUrl, streamUrl = '', durationMs } = meta;
-			if (!title?.trim()) continue;
-
-			const group = byBasename.get(basename);
-			if (!group) continue;
-
-			const flacFile = group.find((f) => {
-				const p = (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name;
-				return p.includes('/flac/') || f.name.endsWith('.flac');
-			});
-
-			const effectiveLicense = (licenseUrl?.trim() || sharedLicenseUrl)?.trim();
-			if (!effectiveLicense) continue;
-
-			// Look up existing source by basename (or title for legacy rows without basename)
-			// Use limit(1).all() instead of .get() — D1 can throw "Failed query" with .get() on certain params
-			let existing = basename
-				? (
-						await db
-							.select()
-							.from(sourceFiles)
-							.where(eq(sourceFiles.basename, basename))
-							.limit(1)
-							.all()
-					)[0] ?? null
-				: null;
-			if (!existing && basename) {
-				// Fallback: match by normalized title for legacy sources (no basename set)
-				const normalizedTitle = title.trim().toLowerCase();
-				const legacySources = await db
-					.select()
-					.from(sourceFiles)
-					.where(isNull(sourceFiles.basename))
-					.all();
-				const matches = legacySources.filter(
-					(s) => s.title.trim().toLowerCase() === normalizedTitle
-				);
-				if (matches.length === 1) {
-					existing = matches[0];
-					await db
-						.update(sourceFiles)
-						.set({ basename })
-						.where(eq(sourceFiles.id, existing.id));
-				}
-			}
-
-			let source: { id: string; r2Key: string } | null = null;
-
-			if (existing) {
-				// Replace: overwrite FLAC, replace all candidates with upload
-				// Skip if source has been used in survey responses (FK: answers → candidate_files)
-				const existingCandidateIds = (
-					await db
-						.select({ id: candidateFiles.id })
-						.from(candidateFiles)
-						.where(eq(candidateFiles.sourceFileId, existing.id))
-						.all()
-				).map((c) => c.id);
-				if (existingCandidateIds.length > 0) {
-					const [usedA] = await db
-						.select({ id: answers.id })
-						.from(answers)
-						.where(inArray(answers.candidateAId, existingCandidateIds))
-						.limit(1)
-						.all();
-					const [usedB] = await db
-						.select({ id: answers.id })
-						.from(answers)
-						.where(inArray(answers.candidateBId, existingCandidateIds))
-						.limit(1)
-						.all();
-					if (usedA ?? usedB) continue;
-				}
-
-				source = existing;
-				merged++;
-
-				const updateFields: Record<string, unknown> = {
-					title: title.trim(),
-					artist: artist?.trim() ? formatList(parseList(artist)) : null,
-					genre: genre?.trim() ? formatList(parseList(genre)) : null,
-					licenseUrl: effectiveLicense
-				};
-				const effectiveStreamUrl = (streamUrl?.trim() || sharedStreamUrl)?.trim();
-				if (effectiveStreamUrl) updateFields.streamUrl = effectiveStreamUrl;
-
-				if (flacFile) {
-					const flacBuffer = await flacFile.arrayBuffer();
-					await storage.put(existing.r2Key, flacBuffer, 'audio/flac');
-					const clientDurationMs = durationMs != null ? Number(durationMs) : NaN;
-					updateFields.duration =
-						Number.isFinite(clientDurationMs) && clientDurationMs > 0
-							? Math.round(clientDurationMs)
-							: Math.round((flacFile.size / (1400 * 1000 / 8)) * 1000);
-				}
-
-				await db.update(sourceFiles).set(updateFields).where(eq(sourceFiles.id, existing.id));
-
-				// Delete existing candidates (replace, not merge)
-				const oldCandidates = await db
-					.select({ id: candidateFiles.id, r2Key: candidateFiles.r2Key })
-					.from(candidateFiles)
-					.where(eq(candidateFiles.sourceFileId, existing.id))
-					.all();
-				const oldIds = oldCandidates.map((c) => c.id);
-				if (oldIds.length > 0) {
-					await db
-						.delete(ephemeralStreamUrls)
-						.where(inArray(ephemeralStreamUrls.candidateFileId, oldIds));
-					for (const c of oldCandidates) {
-						try {
-							await storage.delete(c.r2Key);
-						} catch {
-							// ignore
-						}
-					}
-					await db
-						.delete(candidateFiles)
-						.where(eq(candidateFiles.sourceFileId, existing.id));
-				}
-				// existingKeys stays empty so we add all from upload
-			} else {
-				// Create new source — requires FLAC
-				if (!flacFile) continue;
-
-				const sourceSlug = slugForR2(basename);
-				const r2Key = `sources/${sourceSlug}_${crypto.randomUUID().slice(0, 8)}.flac`;
-				const flacBuffer = await flacFile.arrayBuffer();
-				await storage.put(r2Key, flacBuffer, 'audio/flac');
-
-				const clientDurationMs = durationMs != null ? Number(durationMs) : NaN;
-				const durationMsFinal =
-					Number.isFinite(clientDurationMs) && clientDurationMs > 0
-						? Math.round(clientDurationMs)
-						: Math.round((flacFile.size / (1400 * 1000 / 8)) * 1000);
-
-				const effectiveStreamUrl = (streamUrl?.trim() || sharedStreamUrl)?.trim() || null;
-				const [inserted] = await db
-					.insert(sourceFiles)
-					.values({
-						basename: basename || null,
-						r2Key,
-						licenseUrl: effectiveLicense,
-						streamUrl: effectiveStreamUrl,
-						title: title.trim(),
-						artist: artist?.trim() ? formatList(parseList(artist)) : null,
-						genre: genre?.trim() ? formatList(parseList(genre)) : null,
-						duration: durationMsFinal
-					})
-					.returning();
-
-				source = inserted ?? null;
-				if (source) created++;
-			}
-
-			if (!source) continue;
-
-			// Get existing candidates for this source (to avoid duplicates when merging)
-			const existingCandidates = await db
-				.select({ codec: candidateFiles.codec, bitrate: candidateFiles.bitrate })
-				.from(candidateFiles)
-				.where(eq(candidateFiles.sourceFileId, source.id))
-				.all();
-			const existingKeys = new Set(
-				existingCandidates.map((c) => `${c.codec}_${c.bitrate}`)
-			);
-
-			for (const file of group) {
-				const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
-				const parts = path.split(/[/\\]/);
-				const filename = parts[parts.length - 1] ?? '';
-				if (!filename) continue;
-
-				const match = filename.match(/_(opus|flac|mp3|aac)_(\d+)\.[a-z0-9]+$/i);
-				if (!match) continue;
-
-				const codec = match[1]?.toLowerCase() as (typeof CODECS)[number];
-				const bitrate = parseInt(match[2] ?? '0', 10);
-				const inCodecs = CODECS.includes(codec);
-				const isDup = existingKeys.has(`${codec}_${bitrate}`);
-
-				if (!inCodecs || isDup) continue;
-
-				const candidateSlug = slugForR2(filename);
-				const candidateR2Key = `candidates/${source.id}/${candidateSlug}`;
-				const buffer = await file.arrayBuffer();
-				await storage.put(candidateR2Key, buffer, file.type || 'application/octet-stream');
-
-				await db.insert(candidateFiles).values({
-					r2Key: candidateR2Key,
-					codec,
-					bitrate,
-					sourceFileId: source.id
-				});
-
-				existingKeys.add(`${codec}_${bitrate}`);
-			}
-		}
-
-		if (created === 0 && merged === 0) {
-			return fail(400, {
-				error:
-					'No valid tracks to upload. New tracks require a FLAC file. For merging, ensure basename matches existing and metadata is complete.'
-			});
-		}
-
-		return { success: true, count: created, merged };
-	},
-
-	/**
-	 * Upload a single file (used for sequential per-file directory upload).
-	 * Client sends files in order: FLAC first per track, then candidates.
-	 * Avoids large single-request body limits.
-	 */
-	uploadSingleFile: async ({ request, platform }) => {
-		if (!platform) return fail(500, { error: 'Platform not available' });
-
-		const formData = await request.formData();
-		const file = formData.get('file') as File | null;
-		const licenseUrl = (formData.get('license_url') as string)?.trim() ?? '';
-		const streamUrl = (formData.get('stream_url') as string)?.trim() ?? '';
-		const basename = (formData.get('basename') as string)?.trim() ?? '';
-		const title = (formData.get('title') as string)?.trim() ?? '';
-		const artist = (formData.get('artist') as string)?.trim() ?? '';
-		const genre = (formData.get('genre') as string)?.trim() ?? '';
-		const durationMsRaw = formData.get('duration_ms') as string | null;
-		const durationMs = durationMsRaw ? parseInt(durationMsRaw, 10) : null;
-		const isFlac = formData.get('is_flac') === 'true';
-
-		if (!file || !(file instanceof File) || file.size === 0) {
-			return fail(400, { error: 'Missing or empty file' });
-		}
-		if (!basename || !title?.trim()) {
-			return fail(400, { error: 'Missing basename or title' });
-		}
-
-		if (!licenseUrl) {
-			return fail(400, { error: 'License URL is required' });
-		}
-
-		const db = getDb(platform);
-		const storage = getStorage(platform);
-
-		if (isFlac) {
-			// FLAC: create or update source
-			let existing = (
-				await db
-					.select()
-					.from(sourceFiles)
-					.where(eq(sourceFiles.basename, basename))
-					.limit(1)
-					.all()
-			)[0] ?? null;
-			if (!existing) {
-				const normalizedTitle = title.toLowerCase();
-				const legacySources = await db
-					.select()
-					.from(sourceFiles)
-					.where(isNull(sourceFiles.basename))
-					.all();
-				const matches = legacySources.filter((s) => s.title.trim().toLowerCase() === normalizedTitle);
-				if (matches.length === 1) {
-					existing = matches[0];
-					await db.update(sourceFiles).set({ basename }).where(eq(sourceFiles.id, existing.id));
-				}
-			}
-
-			if (existing) {
-				const existingCandidateIds = (
-					await db
-						.select({ id: candidateFiles.id })
-						.from(candidateFiles)
-						.where(eq(candidateFiles.sourceFileId, existing.id))
-						.all()
-				).map((c) => c.id);
-				if (existingCandidateIds.length > 0) {
-					const [usedA] = await db
-						.select({ id: answers.id })
-						.from(answers)
-						.where(inArray(answers.candidateAId, existingCandidateIds))
-						.limit(1)
-						.all();
-					const [usedB] = await db
-						.select({ id: answers.id })
-						.from(answers)
-						.where(inArray(answers.candidateBId, existingCandidateIds))
-						.limit(1)
-						.all();
-					if (usedA ?? usedB) {
-						return fail(400, { error: `Source "${basename}" has been used in survey responses` });
-					}
-				}
-
-				const flacBuffer = await file.arrayBuffer();
-				await storage.put(existing.r2Key, flacBuffer, 'audio/flac');
-				const clientDurationMs = durationMs != null ? Number(durationMs) : NaN;
-				const duration =
-					Number.isFinite(clientDurationMs) && clientDurationMs > 0
-						? Math.round(clientDurationMs)
-						: Math.round((file.size / (1400 * 1000 / 8)) * 1000);
-
-				await db
-					.update(sourceFiles)
-					.set({
-						title,
-						artist: artist?.trim() ? formatList(parseList(artist)) : null,
-						genre: genre?.trim() ? formatList(parseList(genre)) : null,
-						licenseUrl,
-						streamUrl: streamUrl?.trim() || null,
-						duration
-					})
-					.where(eq(sourceFiles.id, existing.id));
-
-				const oldCandidates = await db
-					.select({ id: candidateFiles.id, r2Key: candidateFiles.r2Key })
-					.from(candidateFiles)
-					.where(eq(candidateFiles.sourceFileId, existing.id))
-					.all();
-				const oldIds = oldCandidates.map((c) => c.id);
-				if (oldIds.length > 0) {
-					await db
-						.delete(ephemeralStreamUrls)
-						.where(inArray(ephemeralStreamUrls.candidateFileId, oldIds));
-					for (const c of oldCandidates) {
-						try {
-							await storage.delete(c.r2Key);
-						} catch {
-							// ignore
-						}
-					}
-					await db.delete(candidateFiles).where(eq(candidateFiles.sourceFileId, existing.id));
-				}
-				return { success: true, created: 0, merged: 1 };
-			}
-
-			// New source
-			const sourceSlug = slugForR2(basename);
-			const r2Key = `sources/${sourceSlug}_${crypto.randomUUID().slice(0, 8)}.flac`;
-			const flacBuffer = await file.arrayBuffer();
-			await storage.put(r2Key, flacBuffer, 'audio/flac');
-
-			const clientDurationMs = durationMs != null ? Number(durationMs) : NaN;
-			const durationMsFinal =
-				Number.isFinite(clientDurationMs) && clientDurationMs > 0
-					? Math.round(clientDurationMs)
-					: Math.round((file.size / (1400 * 1000 / 8)) * 1000);
-
-			await db.insert(sourceFiles).values({
-				basename,
-				r2Key,
-				licenseUrl,
-				streamUrl: streamUrl || null,
-				title,
-				artist: artist?.trim() ? formatList(parseList(artist)) : null,
-				genre: genre?.trim() ? formatList(parseList(genre)) : null,
-				duration: durationMsFinal
-			});
-			return { success: true, created: 1, merged: 0 };
-		}
-
-		// Non-FLAC: add as candidate; source must exist
-		const [source] = await db
-			.select()
-			.from(sourceFiles)
-			.where(eq(sourceFiles.basename, basename))
-			.limit(1)
-			.all();
-		if (!source) {
-			return fail(400, { error: `No source found for basename "${basename}". Upload FLAC first.` });
-		}
-
-		const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
-		const parts = path.split(/[/\\]/);
-		const filename = parts[parts.length - 1] ?? '';
-		if (!filename) return fail(400, { error: 'Invalid filename' });
-
-		const match = filename.match(/_(opus|flac|mp3|aac)_(\d+)\.[a-z0-9]+$/i);
-		if (!match) return fail(400, { error: `Filename "${filename}" does not match expected format` });
-
-		const codec = match[1]?.toLowerCase() as (typeof CODECS)[number];
-		const bitrate = parseInt(match[2] ?? '0', 10);
-		if (!CODECS.includes(codec) || codec === 'flac') {
-			return fail(400, { error: `Invalid codec for candidate: ${codec}` });
-		}
-
-		const existingCandidates = await db
-			.select({ codec: candidateFiles.codec, bitrate: candidateFiles.bitrate })
-			.from(candidateFiles)
-			.where(eq(candidateFiles.sourceFileId, source.id))
-			.all();
-		const existingKeys = new Set(existingCandidates.map((c) => `${c.codec}_${c.bitrate}`));
-		if (existingKeys.has(`${codec}_${bitrate}`)) {
-			return { success: true, created: 0, merged: 0, skipped: 'duplicate' };
-		}
-
-		const candidateSlug = slugForR2(filename);
-		const candidateR2Key = `candidates/${source.id}/${candidateSlug}`;
-		const buffer = await file.arrayBuffer();
-		await storage.put(candidateR2Key, buffer, file.type || 'application/octet-stream');
-		await db.insert(candidateFiles).values({
-			r2Key: candidateR2Key,
-			codec,
-			bitrate,
-			sourceFileId: source.id
-		});
-		return { success: true, created: 0, merged: 0 };
-	}
 } satisfies Actions;

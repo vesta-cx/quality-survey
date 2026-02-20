@@ -9,7 +9,16 @@ import {
 	TRANSITION_MODES
 } from '$lib/server/db/schema';
 import { DEFAULT_SEGMENT_DURATION_MS } from '$lib/server/survey-config';
+import type { RoundMode } from '$lib/server/game';
 import type { RequestHandler } from './$types';
+
+const ROUND_MODES: RoundMode[] = [
+	'codec_compare',
+	'bitrate_battle',
+	'genre_trials',
+	'tradeoff',
+	'mixtape'
+];
 
 /** Short expiry for "you were listening to" playback token */
 const PLAYBACK_TOKEN_EXPIRY_MIN = 2;
@@ -27,6 +36,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		tokenYwltB,
 		selected,
 		transitionMode,
+		roundMode,
 		startTime,
 		segmentDuration,
 		responseTime,
@@ -67,18 +77,33 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		return error(410, 'Stream tokens expired or invalid');
 	}
 
-	// Determine pairing type from candidate IDs
 	const candidateAId = streamA.candidateFileId;
 	const candidateBId = streamB.candidateFileId;
 
-	// We determine pairing type server-side based on the candidates
-	// For now, infer from whether they're the same candidate
+	const [candA, candB] = await Promise.all([
+		db
+			.select({ sourceFileId: candidateFiles.sourceFileId })
+			.from(candidateFiles)
+			.where(eq(candidateFiles.id, candidateAId))
+			.get(),
+		db
+			.select({ sourceFileId: candidateFiles.sourceFileId })
+			.from(candidateFiles)
+			.where(eq(candidateFiles.id, candidateBId))
+			.get()
+	]);
+
 	let pairingType: 'same_song' | 'different_song' | 'placebo' = 'same_song';
 	if (candidateAId === candidateBId) {
 		pairingType = 'placebo';
+	} else if (candA && candB && candA.sourceFileId === candB.sourceFileId) {
+		pairingType = 'same_song';
+	} else {
+		pairingType = 'different_song';
 	}
-	// Note: full pairing type detection (same_song vs different_song) would
-	// require joining to candidate_files.source_file_id -- kept simple for now
+
+	const validatedRoundMode: RoundMode | null =
+		roundMode && ROUND_MODES.includes(roundMode) ? roundMode : null;
 
 	const [answer] = await db
 		.insert(answers)
@@ -90,6 +115,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			selected,
 			pairingType,
 			transitionMode,
+			roundMode: validatedRoundMode,
 			startTime: startTime ?? 0,
 			segmentDuration: segmentDuration ?? DEFAULT_SEGMENT_DURATION_MS,
 			responseTime: responseTime ?? null

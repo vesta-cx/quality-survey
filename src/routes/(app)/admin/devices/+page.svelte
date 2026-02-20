@@ -80,14 +80,14 @@
 
 	const handleUpdateResult = (opts: {
 		result?: { type?: string; data?: { success?: boolean } };
-		update?: () => Promise<void>;
+		update?: (options?: { reset?: boolean }) => Promise<void>;
 	}) => {
 		if (opts?.result?.type === 'success' && opts?.result?.data?.success) {
 			toast.success('Device updated');
 			editDialogOpen = false;
 			editingDevice = null;
 		}
-		opts?.update?.();
+		opts?.update?.({ reset: false });
 	};
 
 	const openEdit = (device: (typeof data.devices)[number]) => {
@@ -109,13 +109,13 @@
 
 	const handleCreateResult = (opts: {
 		result?: { type?: string; data?: { success?: boolean } };
-		update?: () => Promise<void>;
+		update?: (options?: { reset?: boolean }) => Promise<void>;
 	}) => {
 		if (opts?.result?.type === 'success' && opts?.result?.data?.success) {
 			toast.success('Device added (pending approval)');
 			addDialogOpen = false;
 		}
-		opts?.update?.();
+		opts?.update?.({ reset: false });
 	};
 </script>
 

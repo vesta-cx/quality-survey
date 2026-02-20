@@ -85,6 +85,17 @@
 					infoContent={transitionTooltips[mode]}
 				/>
 			{/each}
+			{#if allowDifferentSong}
+				<div class="text-muted-foreground flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2">
+					<input type="checkbox" checked disabled class="mt-0.5 size-4 shrink-0" />
+					<div class="text-xs">
+						<span class="font-medium">{transitionLabels['gap_pause_resume'] ?? 'Gap (pause/resume)'}</span>
+						<span class="block text-muted-foreground">
+							Different-song rounds use pause/resume.
+						</span>
+					</div>
+				</div>
+			{/if}
 		</div>
 		<CheckboxWithInfo.Root
 			label="Compare different songs"

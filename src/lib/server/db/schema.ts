@@ -70,7 +70,8 @@ export const sourceFiles = sqliteTable('source_files', {
 		.$defaultFn(() => crypto.randomUUID()),
 	/** Basename from filename (e.g. "song_name" from "song_name_flac_0.flac"). Used for merge-on-upload. */
 	basename: text('basename'),
-	r2Key: text('r2_key').notNull(),
+	/** Null while Euterpe is transcoding; set when webhook fires. */
+	r2Key: text('r2_key'),
 	uploadedAt: integer('uploaded_at', { mode: 'timestamp' })
 		.notNull()
 		.$defaultFn(() => new Date()),
@@ -79,12 +80,17 @@ export const sourceFiles = sqliteTable('source_files', {
 	approvedBy: text('approved_by'),
 	title: text('title').notNull(),
 	streamUrl: text('stream_url'),
-	/** Comma-separated artists (e.g. "Artist A, Artist B"). */
+	/** Semicolon-separated main artists (e.g. "Artist A; Artist B"). Use \; for semicolons in names. */
 	artist: text('artist'),
+	/** Semicolon-separated featured artists. Displayed as "(feat. artist1, artist2 & artist3)". */
+	featuredArtists: text('featured_artists'),
+	/** Semicolon-separated remix artists. Displayed as "(artist1, artist2 & artist3 Remix)". */
+	remixArtists: text('remix_artists'),
 	artistUrl: text('artist_url'),
-	/** Comma-separated genres. Prefer values from GENRES for segment analysis. */
+	/** Semicolon-separated genres. Use \; for semicolons. Prefer values from GENRES for segment analysis. */
 	genre: text('genre'),
-	duration: integer('duration').notNull() // total duration in ms
+	/** Null while Euterpe is transcoding; set when webhook fires. Total duration in ms. */
+	duration: integer('duration')
 });
 
 export const qualityOptions = sqliteTable(
@@ -142,7 +148,8 @@ export const answers = sqliteTable('answers', {
 	transitionMode: text('transition_mode', { enum: TRANSITION_MODES }).notNull(),
 	startTime: integer('start_time').notNull(), // segment start in ms
 	segmentDuration: integer('segment_duration').notNull(), // segment length in ms
-	responseTime: integer('response_time') // time spent deciding in ms
+	responseTime: integer('response_time'), // time spent deciding in ms
+	roundMode: text('round_mode') // codec_compare, bitrate_battle, genre_trials, tradeoff, mixtape
 });
 
 export const surveyConfig = sqliteTable('survey_config', {
@@ -244,6 +251,27 @@ export const resultSnapshots = sqliteTable('result_snapshots', {
 	} | null>(),
 	qualityVsContentByGap: text('quality_vs_content_by_gap', { mode: 'json' }).$type<
 		Record<string, { quality_wins: number; content_wins: number }> | null
+	>(),
+	// Snapshot expansion (pair-picking redesign)
+	sourcesetSongCount: integer('sourceset_song_count'),
+	sourcesetArtistCount: integer('sourceset_artist_count'),
+	sourceCoverage: real('source_coverage'), // % of sources used in at least one round
+	uniquePairingCount: integer('unique_pairing_count'),
+	roundsPerMode: text('rounds_per_mode', { mode: 'json' }).$type<Record<string, number>>(),
+	winRateByMode: text('win_rate_by_mode', { mode: 'json' }).$type<Record<string, number>>(),
+	neitherRateByMode: text('neither_rate_by_mode', { mode: 'json' }).$type<Record<string, number>>(),
+	avgResponseTimeByMode: text('avg_response_time_by_mode', { mode: 'json' }).$type<
+		Record<string, number>
+	>(),
+	topGenres: text('top_genres', { mode: 'json' }).$type<Array<{ genre: string; score: number }>>(),
+	topArtists: text('top_artists', { mode: 'json' }).$type<
+		Array<{ artist: string; score: number }>
+	>(),
+	topSongs: text('top_songs', { mode: 'json' }).$type<
+		Array<{ sourceId: string; title: string; score: number }>
+	>(),
+	topCodecs: text('top_codecs', { mode: 'json' }).$type<
+		Array<{ codec: string; score: number }>
 	>(),
 	insights: text('insights', { mode: 'json' }).$type<Record<string, unknown>>()
 });

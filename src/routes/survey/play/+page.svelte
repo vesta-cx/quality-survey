@@ -8,6 +8,7 @@
 	import ComparisonSettingsPopover from '$lib/components/comparison-settings-popover.svelte';
 	import { Anchor } from '@vesta-cx/ui/components/utils/anchor';
 	import TrackLabel from '$lib/components/track-label.svelte';
+	import { formatTrackLabel } from '$lib/utils/list';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import PowerIcon from '@lucide/svelte/icons/power';
 	let { data } = $props();
@@ -47,10 +48,10 @@
 
 	const getTransitionLabel = (
 		mode: string,
-		labelA: { title: string; artist: string | null },
-		labelB: { title: string; artist: string | null }
+		labelA: { title: string; artist?: string | null; featuredArtists?: string | null; remixArtists?: string | null },
+		labelB: { title: string; artist?: string | null; featuredArtists?: string | null; remixArtists?: string | null }
 	): string => {
-		if (formatLabel(labelA) !== formatLabel(labelB)) return 'Different songs';
+		if (formatTrackLabel(labelA) !== formatTrackLabel(labelB)) return 'Different songs';
 		return TRANSITION_LABELS[mode] ?? mode;
 	};
 
@@ -65,8 +66,7 @@
 			'Brief pause when switching; each track resumes from where you left it. No syncing between A and B.'
 	};
 
-	const formatLabel = (l: { title: string; artist: string | null }) =>
-		l.artist ? `${l.title} — ${l.artist}` : l.title;
+	const formatLabel = formatTrackLabel;
 
 	type SubmittedPayload = {
 		selected: 'a' | 'b' | 'neither';
@@ -151,6 +151,7 @@
 					tokenYwltB: data.round.tokenYwltB ?? undefined,
 					selected,
 					transitionMode: data.round.transitionMode,
+					roundMode: data.round.roundMode ?? undefined,
 					startTime: data.round.startTime,
 					segmentDuration: data.round.duration,
 					responseTime,
@@ -165,8 +166,8 @@
 				return;
 			}
 
-			const labelAStr = formatLabel(data.round.labelA);
-			const labelBStr = formatLabel(data.round.labelB);
+			const labelAStr = formatTrackLabel(data.round.labelA);
+			const labelBStr = formatTrackLabel(data.round.labelB);
 			submitted = {
 				selected,
 				labelA: labelAStr,

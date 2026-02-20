@@ -1,5 +1,5 @@
-import { eq, lt } from 'drizzle-orm';
-import { parseList } from '$lib/utils/list';
+import { eq, isNotNull, lt } from 'drizzle-orm';
+import { parseList } from '../utils/list.js';
 import type { Database } from './db';
 import {
 	answers,
@@ -59,6 +59,30 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 			.get();
 		if (c) candidateCache.set(id, c);
 		return c;
+	};
+
+	const sourceMetaCache = new Map<
+		string,
+		{ artist: string | null; title: string; genre: string | null }
+	>();
+	const loadSourceMeta = async (sourceFileId: string) => {
+		if (sourceMetaCache.has(sourceFileId)) return sourceMetaCache.get(sourceFileId)!;
+		const row = await db
+			.select({
+				artist: sourceFiles.artist,
+				title: sourceFiles.title,
+				genre: sourceFiles.genre
+			})
+			.from(sourceFiles)
+			.where(eq(sourceFiles.id, sourceFileId))
+			.get();
+		const meta = {
+			artist: row?.artist ?? null,
+			title: row?.title ?? 'Unknown',
+			genre: row?.genre ?? null
+		};
+		sourceMetaCache.set(sourceFileId, meta);
+		return meta;
 	};
 
 	const sourceGenreCache = new Map<string, string[]>();
@@ -559,6 +583,129 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 	const qualityVsContentByGap =
 		Object.keys(qualityByGap).length > 0 ? qualityByGap : null;
 
+	// New snapshot stats (pair-picking redesign)
+	const sourceIdsUsed = new Set<string>();
+	const uniquePairings = new Set<string>();
+	for (const answer of allAnswers) {
+		const candA = await loadCandidate(answer.candidateAId);
+		const candB = await loadCandidate(answer.candidateBId);
+		if (!candA || !candB) continue;
+		sourceIdsUsed.add(candA.sourceFileId);
+		sourceIdsUsed.add(candB.sourceFileId);
+		const pairKey =
+			answer.candidateAId < answer.candidateBId
+				? `${answer.candidateAId}:${answer.candidateBId}`
+				: `${answer.candidateBId}:${answer.candidateAId}`;
+		uniquePairings.add(pairKey);
+	}
+
+	const approvedSources = await db
+		.select({ id: sourceFiles.id, artist: sourceFiles.artist, title: sourceFiles.title })
+		.from(sourceFiles)
+		.where(isNotNull(sourceFiles.approvedAt))
+		.all();
+
+	const sourcesetSongCount = approvedSources.length;
+	const artistSet = new Set<string>();
+	for (const s of approvedSources) {
+		if (s.artist) {
+			parseList(s.artist).forEach((a) => artistSet.add(a.trim()));
+		}
+	}
+	const sourcesetArtistCount = artistSet.size;
+	const sourceCoverage =
+		approvedSources.length > 0
+			? sourceIdsUsed.size / approvedSources.length
+			: null;
+
+	const roundsPerMode: Record<string, number> = {};
+	const winCountByMode: Record<string, number> = {};
+	const neitherCountByMode: Record<string, number> = {};
+	const responseTimeSumByMode: Record<string, number> = {};
+	const responseTimeCountByMode: Record<string, number> = {};
+
+	for (const answer of allAnswers) {
+		const mode = (answer as { roundMode?: string }).roundMode ?? 'mixtape';
+		roundsPerMode[mode] = (roundsPerMode[mode] ?? 0) + 1;
+		if (answer.selected === 'neither') {
+			neitherCountByMode[mode] = (neitherCountByMode[mode] ?? 0) + 1;
+		} else {
+			winCountByMode[mode] = (winCountByMode[mode] ?? 0) + 1;
+		}
+		if (typeof answer.responseTime === 'number' && answer.responseTime >= 0) {
+			responseTimeSumByMode[mode] = (responseTimeSumByMode[mode] ?? 0) + answer.responseTime;
+			responseTimeCountByMode[mode] = (responseTimeCountByMode[mode] ?? 0) + 1;
+		}
+	}
+
+	const winRateByMode: Record<string, number> = {};
+	const neitherRateByMode: Record<string, number> = {};
+	const avgResponseTimeByMode: Record<string, number> = {};
+	for (const mode of Object.keys(roundsPerMode)) {
+		const total = roundsPerMode[mode];
+		winRateByMode[mode] = total > 0 ? (winCountByMode[mode] ?? 0) / total : 0;
+		neitherRateByMode[mode] = total > 0 ? (neitherCountByMode[mode] ?? 0) / total : 0;
+		const rtSum = responseTimeSumByMode[mode];
+		const rtCount = responseTimeCountByMode[mode];
+		if (rtCount != null && rtCount > 0 && rtSum != null) {
+			avgResponseTimeByMode[mode] = rtSum / rtCount;
+		}
+	}
+
+	const genreScores: Record<string, number> = {};
+	for (const [key, genreMap] of Object.entries(codecPqScoresByGenre)) {
+		for (const [genre, score] of Object.entries(genreMap)) {
+			genreScores[genre] = (genreScores[genre] ?? 0) + score;
+		}
+	}
+	const topGenres = Object.entries(genreScores)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 5)
+		.map(([genre, score]) => ({ genre, score }));
+
+	const codecScores: Record<string, number> = {};
+	for (const [key, score] of Object.entries(codecPqScores)) {
+		const codec = key.split('_')[0];
+		if (codec) {
+			codecScores[codec] = Math.max(codecScores[codec] ?? 0, score);
+		}
+	}
+	const topCodecs = Object.entries(codecScores)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 5)
+		.map(([codec, score]) => ({ codec, score }));
+
+	const sourceWins: Record<string, number> = {};
+	const artistWins: Record<string, number> = {};
+	for (const answer of allAnswers) {
+		if (answer.selected === 'neither') continue;
+		const candA = await loadCandidate(answer.candidateAId);
+		const candB = await loadCandidate(answer.candidateBId);
+		if (!candA || !candB) continue;
+		const winnerSourceId =
+			answer.selected === 'a' ? candA.sourceFileId : candB.sourceFileId;
+		sourceWins[winnerSourceId] = (sourceWins[winnerSourceId] ?? 0) + 1;
+		const meta = await loadSourceMeta(winnerSourceId);
+		if (meta.artist) {
+			for (const a of parseList(meta.artist).map((x) => x.trim()).filter(Boolean)) {
+				artistWins[a] = (artistWins[a] ?? 0) + 1;
+			}
+		}
+	}
+	const topArtists = Object.entries(artistWins)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 5)
+		.map(([artist, score]) => ({ artist, score }));
+
+	const topSongs = Object.entries(sourceWins)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 5)
+		.map(async ([sourceId, score]) => {
+			const meta = await loadSourceMeta(sourceId);
+			return { sourceId, title: meta.title, score };
+		});
+	const topSongsRes = (await Promise.all(topSongs)).filter((s) => s.title);
+
 	const insights = {
 		codecWinRates,
 		bradleyTerryScores,
@@ -620,6 +767,19 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 			Object.keys(codecPqScoresByGenre).length > 0 ? codecPqScoresByGenre : null,
 		crossGenreQualityTradeoff,
 		qualityVsContentByGap,
+		sourcesetSongCount,
+		sourcesetArtistCount,
+		sourceCoverage,
+		uniquePairingCount: uniquePairings.size,
+		roundsPerMode: Object.keys(roundsPerMode).length > 0 ? roundsPerMode : null,
+		winRateByMode: Object.keys(winRateByMode).length > 0 ? winRateByMode : null,
+		neitherRateByMode: Object.keys(neitherRateByMode).length > 0 ? neitherRateByMode : null,
+		avgResponseTimeByMode:
+			Object.keys(avgResponseTimeByMode).length > 0 ? avgResponseTimeByMode : null,
+		topGenres: topGenres.length > 0 ? topGenres : null,
+		topArtists: topArtists.length > 0 ? topArtists : null,
+		topSongs: topSongsRes.length > 0 ? topSongsRes : null,
+		topCodecs: topCodecs.length > 0 ? topCodecs : null,
 		insights
 	});
 
