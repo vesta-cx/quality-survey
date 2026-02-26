@@ -1,7 +1,9 @@
 import type { Handle } from '@sveltejs/kit';
 import { createAuthHandle } from '@vesta-cx/utils/auth';
+import { createCorsHandle } from '@vesta-cx/utils/cors';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 
+const handleCors = createCorsHandle();
 const handleAuth = createAuthHandle({
 	protectedPaths: ['/admin'],
 	postLoginRedirect: '/admin'
@@ -16,13 +18,17 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 		});
 	});
 
-// Manual composition instead of sequence() — avoids "Could not get the request store" in SvelteKit 2.51+
+// Manual composition: CORS first (OPTIONS + headers), then auth, then paraglide
 export const handle: Handle = async ({ event, resolve }) =>
-	handleAuth({
+	handleCors({
 		event,
 		resolve: (e, opts) =>
-			handleParaglide({
+			handleAuth({
 				event: e,
-				resolve: (e2, opts2) => resolve(e2, opts2)
+				resolve: (e2, opts2) =>
+					handleParaglide({
+						event: e2,
+						resolve: (e3, opts3) => resolve(e3, opts3)
+					})
 			})
 	});
