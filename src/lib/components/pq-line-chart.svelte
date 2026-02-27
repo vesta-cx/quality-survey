@@ -132,9 +132,10 @@
 </script>
 
 <div class={className}>
-	<h3 class="text-muted-foreground text-sm font-medium">Perceptual Quality by Bitrate</h3>
-	<p class="text-muted-foreground mt-0.5 text-xs">
-		Bradley-Terry scores (normalized). Higher = more preferred. Where curves flatten ≈ diminishing returns.
+	<h3 class="text-sm font-medium text-muted-foreground">Perceptual Quality by Bitrate</h3>
+	<p class="mt-0.5 text-xs text-muted-foreground">
+		Bradley-Terry scores (normalized). Higher = more preferred. Where curves flatten ≈ diminishing
+		returns.
 	</p>
 	{#if data.length > 0 && (series.length > 0 || hasFlacReference)}
 		{#if browser}
@@ -190,7 +191,9 @@
 				/>
 			</ChartRoot>
 		{:else}
-			<div class="text-muted-foreground mt-4 flex h-60 items-center justify-center rounded-lg border border-dashed text-xs">
+			<div
+				class="mt-4 flex h-60 items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground"
+			>
 				Loading chart…
 			</div>
 		{/if}
@@ -200,14 +203,10 @@
 			{#each series as s (s.key)}
 				<div class="flex items-center gap-1.5">
 					{#if s.key === 'flac'}
-						<span
-							class="inline-block w-4 border-b-2 border-dashed"
-							style="border-color: {s.color}"
+						<span class="inline-block w-4 border-b-2 border-dashed" style="border-color: {s.color}"
 						></span>
 					{:else}
-						<span
-							class="inline-block size-2.5 rounded-full"
-							style="background-color: {s.color}"
+						<span class="inline-block size-2.5 rounded-full" style="background-color: {s.color}"
 						></span>
 					{/if}
 					<span>{s.label}</span>
@@ -215,6 +214,6 @@
 			{/each}
 		</div>
 	{:else}
-		<p class="text-muted-foreground mt-4 text-xs">No comparison data yet.</p>
+		<p class="mt-4 text-xs text-muted-foreground">No comparison data yet.</p>
 	{/if}
 </div>

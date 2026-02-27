@@ -29,10 +29,12 @@
 			if (speakersCount != null) entries.push({ label: 'Speakers', count: speakersCount });
 			return entries.sort((a, b) => b.count - a.count);
 		}
-		return Object.entries(deviceBreakdown).map(([k, v]) => ({
-			label: k === 'speaker' ? 'Speakers' : k.charAt(0).toUpperCase() + k.slice(1),
-			count: v
-		})).sort((a, b) => b.count - a.count);
+		return Object.entries(deviceBreakdown)
+			.map(([k, v]) => ({
+				label: k === 'speaker' ? 'Speakers' : k.charAt(0).toUpperCase() + k.slice(1),
+				count: v
+			}))
+			.sort((a, b) => b.count - a.count);
 	});
 
 	const tierEntries = $derived.by(() => {
@@ -48,7 +50,7 @@
 <div class={className}>
 	{#if deviceEntries.length > 0}
 		<div>
-			<h3 class="text-muted-foreground text-sm font-medium">Device Type</h3>
+			<h3 class="text-sm font-medium text-muted-foreground">Device Type</h3>
 			<div class="mt-2 space-y-2">
 				{#each deviceEntries as { label, count }}
 					<div class="flex items-center justify-between text-sm">
@@ -61,7 +63,7 @@
 	{/if}
 	{#if tierEntries.length > 0}
 		<div class={deviceEntries.length > 0 ? 'mt-4' : ''}>
-			<h3 class="text-muted-foreground text-sm font-medium">Price Tier</h3>
+			<h3 class="text-sm font-medium text-muted-foreground">Price Tier</h3>
 			<div class="mt-2 space-y-2">
 				{#each tierEntries as { label, count }}
 					<div class="flex items-center justify-between text-sm">

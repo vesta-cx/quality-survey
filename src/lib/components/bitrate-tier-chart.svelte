@@ -28,21 +28,21 @@
 
 {#if tiers.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium">Win Rate by Bitrate Tier</h3>
-		<p class="text-muted-foreground mt-0.5 text-xs">
+		<h3 class="text-sm font-medium text-muted-foreground">Win Rate by Bitrate Tier</h3>
+		<p class="mt-0.5 text-xs text-muted-foreground">
 			Higher bitrate tiers winning more suggests listeners can hear the difference.
 		</p>
 		<div class="mt-3 space-y-3">
 			{#each tiers as { label, rate }}
 				<div class="flex items-center gap-3">
 					<span class="w-24 text-sm">{label}</span>
-					<div class="bg-muted h-4 flex-1 overflow-hidden rounded-full">
+					<div class="h-4 flex-1 overflow-hidden rounded-full bg-muted">
 						<div
-							class="bg-primary h-full rounded-full transition-all"
+							class="h-full rounded-full bg-primary transition-all"
 							style="width: {Math.min(100, Math.round(rate * 100))}%"
 						></div>
 					</div>
-					<span class="text-muted-foreground w-12 text-right text-sm">
+					<span class="w-12 text-right text-sm text-muted-foreground">
 						{Math.round(rate * 100)}%
 					</span>
 				</div>

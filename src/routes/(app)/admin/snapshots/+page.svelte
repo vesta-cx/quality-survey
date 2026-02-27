@@ -14,7 +14,7 @@
 		<form method="POST" action="?/trigger" use:enhance>
 			<button
 				type="submit"
-				class="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium"
+				class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 			>
 				Trigger Snapshot
 			</button>
@@ -22,35 +22,39 @@
 	</div>
 
 	{#if form?.success}
-		<div class="rounded-lg border bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+		<div
+			class="rounded-lg border bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200"
+		>
 			Snapshot generated successfully!
 		</div>
 	{/if}
 
 	{#if data.snapshots.length === 0}
-		<p class="text-muted-foreground py-12 text-center text-sm">
+		<p class="py-12 text-center text-sm text-muted-foreground">
 			No snapshots yet. Trigger one manually or wait for the cron job.
 		</p>
 	{:else}
 		<div class="space-y-4">
 			{#each data.snapshots as snapshot}
-				<div class="bg-card rounded-xl border p-4">
+				<div class="rounded-xl border bg-card p-4">
 					<div class="flex items-center justify-between">
 						<div>
 							<p class="text-sm font-medium">
 								{snapshot.createdAt?.toLocaleString() ?? 'Unknown'}
 							</p>
-							<p class="text-muted-foreground text-xs">
+							<p class="text-xs text-muted-foreground">
 								{snapshot.totalResponses} responses
 							</p>
 						</div>
 						<div>
 							{#if snapshot.expiresAt && snapshot.expiresAt > new Date()}
-								<span class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">
+								<span
+									class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200"
+								>
 									Active
 								</span>
 							{:else}
-								<span class="text-muted-foreground rounded-full bg-muted px-2 py-0.5 text-xs">
+								<span class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
 									Expired
 								</span>
 							{/if}
@@ -58,10 +62,10 @@
 					</div>
 					{#if snapshot.insights}
 						<details class="mt-2">
-							<summary class="text-muted-foreground cursor-pointer text-xs">
+							<summary class="cursor-pointer text-xs text-muted-foreground">
 								View insights JSON
 							</summary>
-							<pre class="bg-muted mt-2 overflow-x-auto rounded-md p-2 text-xs">
+							<pre class="mt-2 overflow-x-auto rounded-md bg-muted p-2 text-xs">
 								{JSON.stringify(snapshot.insights, null, 2)}
 							</pre>
 						</details>

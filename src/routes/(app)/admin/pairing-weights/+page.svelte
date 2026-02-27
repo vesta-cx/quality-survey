@@ -10,20 +10,15 @@
 		form && 'segmentDurationSaved' in form && form.segmentDurationSaved === true
 	);
 
-	const inputClass =
-		'bg-background border-input w-24 rounded-md border px-2 py-1.5 text-sm';
+	const inputClass = 'bg-background border-input w-24 rounded-md border px-2 py-1.5 text-sm';
 
-	const codecs = $derived([
-		...new Set(data.enabledOptions.map((o) => o.codec))
-	].sort());
-	const bitrates = $derived([
-		...new Set(data.enabledOptions.map((o) => o.bitrate))
-	].sort((a, b) => a - b));
+	const codecs = $derived([...new Set(data.enabledOptions.map((o) => o.codec))].sort());
+	const bitrates = $derived(
+		[...new Set(data.enabledOptions.map((o) => o.bitrate))].sort((a, b) => a - b)
+	);
 
 	const permTotal = $derived(
-		data.permutationWeights
-			? Object.values(data.permutationWeights).reduce((a, b) => a + b, 0)
-			: 0
+		data.permutationWeights ? Object.values(data.permutationWeights).reduce((a, b) => a + b, 0) : 0
 	);
 	const permPct = (key: string): string => {
 		const w = data.permutationWeights?.[key] ?? 0;
@@ -38,7 +33,7 @@
 <div class="space-y-10">
 	<div>
 		<h1 class="text-2xl font-bold">Pairing Weights</h1>
-		<p class="text-muted-foreground mt-1 text-sm">
+		<p class="mt-1 text-sm text-muted-foreground">
 			Configure survey pairing, placebo rate, permutation weights, transition modes, game modes, and
 			Tradeoff gap distribution.
 		</p>
@@ -63,13 +58,15 @@
 		<!-- Section 1: Same vs different song -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">1. Same vs different song</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Control how often the same song vs different songs are compared. Weights are relative.
 			</p>
 			<form
 				method="POST"
 				action="?/savePairing"
-				use:enhance={() => ({ update }) => update({ reset: false })}
+				use:enhance={() =>
+					({ update }) =>
+						update({ reset: false })}
 				class="mt-4 flex flex-wrap items-end gap-4"
 			>
 				<div class="flex items-center gap-2">
@@ -98,7 +95,7 @@
 				</div>
 				<button
 					type="submit"
-					class="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium"
+					class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 				>
 					Save
 				</button>
@@ -108,13 +105,15 @@
 		<!-- Section 2: Placebo probability -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">2. Placebo probability</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Rounds where A and B are identical (attention check). 0–1 (e.g. 0.1 = 10%).
 			</p>
 			<form
 				method="POST"
 				action="?/savePlacebo"
-				use:enhance={() => ({ update }) => update({ reset: false })}
+				use:enhance={() =>
+					({ update }) =>
+						update({ reset: false })}
 				class="mt-4 flex flex-wrap items-end gap-4"
 			>
 				<div class="flex items-center gap-2">
@@ -130,12 +129,12 @@
 						class={inputClass}
 					/>
 				</div>
-				<span class="text-muted-foreground text-sm">
+				<span class="text-sm text-muted-foreground">
 					({((data.placeboProbability ?? 0.1) * 100).toFixed(0)}%)
 				</span>
 				<button
 					type="submit"
-					class="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium"
+					class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 				>
 					Save
 				</button>
@@ -145,7 +144,7 @@
 		<!-- Section 3: Permutation weights table -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">3. Permutation weights</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Weights for (codec, bitrate) combos. Higher = more likely to be picked. Unlisted combos get
 				default 1.
 			</p>
@@ -153,7 +152,9 @@
 				<form
 					method="POST"
 					action="?/savePermutation"
-					use:enhance={() => ({ update }) => update({ reset: false })}
+					use:enhance={() =>
+						({ update }) =>
+							update({ reset: false })}
 					class="mt-4 overflow-x-auto"
 				>
 					<table class="min-w-[400px] text-sm">
@@ -172,7 +173,9 @@
 									<td class="p-2 font-medium">{codec}</td>
 									{#each bitrates as br}
 										{@const key = `${codec}_${br}`}
-										{@const exists = data.enabledOptions.some((o) => o.codec === codec && o.bitrate === br)}
+										{@const exists = data.enabledOptions.some(
+											(o) => o.codec === codec && o.bitrate === br
+										)}
 										<td class="p-2 text-center">
 											{#if exists}
 												<input
@@ -181,7 +184,7 @@
 													min="0"
 													step="0.1"
 													value={data.permutationWeights?.[key] ?? 1}
-													class="bg-background border-input w-16 rounded border px-1 py-0.5 text-center text-sm"
+													class="w-16 rounded border border-input bg-background px-1 py-0.5 text-center text-sm"
 												/>
 											{:else}
 												<span class="text-muted-foreground">—</span>
@@ -195,8 +198,7 @@
 														.filter((o) => o.codec === codec)
 														.reduce(
 															(sum, o) =>
-																sum +
-																(data.permutationWeights?.[`${o.codec}_${o.bitrate}`] ?? 1),
+																sum + (data.permutationWeights?.[`${o.codec}_${o.bitrate}`] ?? 1),
 															0
 														) /
 														permTotal) *
@@ -210,34 +212,36 @@
 					</table>
 					<button
 						type="submit"
-						class="mt-4 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium"
+						class="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 					>
 						Save permutation weights
 					</button>
 				</form>
 			{:else}
-				<p class="text-muted-foreground mt-4 text-sm">Enable quality options first.</p>
+				<p class="mt-4 text-sm text-muted-foreground">Enable quality options first.</p>
 			{/if}
 		</section>
 
 		<!-- Section 4: Transition mode weights -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">4. Transition mode weights</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Weights for gapless, gap_continue, gap_restart. gap_pause_resume applies only to
 				different-song rounds.
 			</p>
 			<form
 				method="POST"
 				action="?/saveTransition"
-				use:enhance={() => ({ update }) => update({ reset: false })}
+				use:enhance={() =>
+					({ update }) =>
+						update({ reset: false })}
 				class="mt-4 grid max-w-md gap-3 sm:grid-cols-2"
 			>
 				{#each ['gapless', 'gap_continue', 'gap_restart', 'gap_pause_resume'] as m}
 					<div class="flex items-center justify-between gap-4">
-						<label for={"trans_" + m} class="text-sm font-medium">{m}</label>
+						<label for={'trans_' + m} class="text-sm font-medium">{m}</label>
 						<input
-							id={"trans_" + m}
+							id={'trans_' + m}
 							name={m}
 							type="number"
 							min="0"
@@ -249,7 +253,7 @@
 				{/each}
 				<button
 					type="submit"
-					class="sm:col-span-2 bg-primary text-primary-foreground hover:bg-primary/90 w-fit rounded-lg px-4 py-2 text-sm font-medium"
+					class="w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:col-span-2"
 				>
 					Save transition weights
 				</button>
@@ -259,21 +263,23 @@
 		<!-- Section 5: Mode weights (Mixtape) -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">5. Mode weights (Mixtape)</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
-				Mixtape picks a mode each round by these weights. (Mode-specific generators coming in
-				Phase 6.)
+			<p class="mt-1 text-sm text-muted-foreground">
+				Mixtape picks a mode each round by these weights. (Mode-specific generators coming in Phase
+				6.)
 			</p>
 			<form
 				method="POST"
 				action="?/saveMode"
-				use:enhance={() => ({ update }) => update({ reset: false })}
+				use:enhance={() =>
+					({ update }) =>
+						update({ reset: false })}
 				class="mt-4 grid max-w-md gap-3 sm:grid-cols-2"
 			>
 				{#each ['codec_compare', 'bitrate_battle', 'genre_trials', 'tradeoff'] as m}
 					<div class="flex items-center justify-between gap-4">
-						<label for={"mode_" + m} class="text-sm font-medium">{m.replace(/_/g, ' ')}</label>
+						<label for={'mode_' + m} class="text-sm font-medium">{m.replace(/_/g, ' ')}</label>
 						<input
-							id={"mode_" + m}
+							id={'mode_' + m}
 							name={m}
 							type="number"
 							min="0"
@@ -285,7 +291,7 @@
 				{/each}
 				<button
 					type="submit"
-					class="sm:col-span-2 bg-primary text-primary-foreground hover:bg-primary/90 w-fit rounded-lg px-4 py-2 text-sm font-medium"
+					class="w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:col-span-2"
 				>
 					Save mode weights
 				</button>
@@ -295,7 +301,7 @@
 		<!-- Section 6: Tradeoff gap config -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">6. Tradeoff gap config</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Min/max target gap (log2) and control points for the probability density. Gaps between
 				points are interpolated. Bias toward smaller or larger gaps by adjusting point weights.
 			</p>
@@ -303,7 +309,9 @@
 				<form
 					method="POST"
 					action="?/saveTradeoffGap"
-					use:enhance={() => ({ update }) => update({ reset: false })}
+					use:enhance={() =>
+						({ update }) =>
+							update({ reset: false })}
 					class="mt-4 space-y-4"
 				>
 					<div class="flex flex-wrap gap-4">
@@ -340,12 +348,13 @@
 							id="gap_points"
 							name="gap_points"
 							rows="4"
-							class="bg-background border-input mt-1 w-full max-w-xl rounded-md border p-2 font-mono text-sm"
-						>{JSON.stringify(data.tradeoffGapConfig.gap_points, null, 2)}</textarea>
+							class="mt-1 w-full max-w-xl rounded-md border border-input bg-background p-2 font-mono text-sm"
+							>{JSON.stringify(data.tradeoffGapConfig.gap_points, null, 2)}</textarea
+						>
 					</div>
 					<button
 						type="submit"
-						class="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium"
+						class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 					>
 						Save Tradeoff gap config
 					</button>
@@ -356,14 +365,16 @@
 		<!-- Section 7: Segment duration -->
 		<section class="rounded-xl border bg-card p-4">
 			<h2 class="text-lg font-semibold">7. Segment duration</h2>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Length of each comparison segment in seconds. Applies to new rounds. Range: 1–120 s.
 			</p>
 			{#if data.segmentDurationMs != null}
 				<form
 					method="POST"
 					action="?/saveSegmentDuration"
-					use:enhance={() => ({ update }) => update({ reset: false })}
+					use:enhance={() =>
+						({ update }) =>
+							update({ reset: false })}
 					class="mt-4 flex flex-wrap items-end gap-4"
 				>
 					<div class="flex items-center gap-2">
@@ -379,12 +390,12 @@
 							class={inputClass}
 						/>
 					</div>
-					<span class="text-muted-foreground text-sm">
+					<span class="text-sm text-muted-foreground">
 						({(data.segmentDurationMs / 1000).toFixed(1)} s)
 					</span>
 					<button
 						type="submit"
-						class="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium"
+						class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 					>
 						Save duration
 					</button>
@@ -392,7 +403,7 @@
 			{/if}
 		</section>
 	{:else}
-		<p class="text-muted-foreground py-8 text-sm">
+		<p class="py-8 text-sm text-muted-foreground">
 			No database connection (e.g. running outside Workers).
 		</p>
 	{/if}

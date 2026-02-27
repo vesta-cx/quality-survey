@@ -17,16 +17,23 @@ const FEAT_REGEX = /\(((?:feat\.?|ft\.?|featuring)\s+.+?)\)/i;
 export const extractFeaturedFromTitle = (
 	title: string | null | undefined
 ): { featuredArtists: string; cleanTitle: string } => {
-	if (title == null || typeof title !== 'string') return { featuredArtists: '', cleanTitle: title ?? '' };
+	if (title == null || typeof title !== 'string')
+		return { featuredArtists: '', cleanTitle: title ?? '' };
 	const t = title.trim();
 	const match = t.match(FEAT_REGEX);
 	if (!match) return { featuredArtists: '', cleanTitle: t };
 	const inner = match[1]?.replace(/^(?:feat\.?|ft\.?|featuring)\s+/i, '').trim() ?? '';
 	// Split by comma, &, or " and " — normalize to semicolon-separated
-	const artists = inner.split(/,\s*|\s+&\s+|\s+and\s+/i).map((a) => a.trim()).filter(Boolean);
+	const artists = inner
+		.split(/,\s*|\s+&\s+|\s+and\s+/i)
+		.map((a) => a.trim())
+		.filter(Boolean);
 	return {
 		featuredArtists: formatList(artists),
-		cleanTitle: t.replace(FEAT_REGEX, '').replace(/\s{2,}/g, ' ').trim()
+		cleanTitle: t
+			.replace(FEAT_REGEX, '')
+			.replace(/\s{2,}/g, ' ')
+			.trim()
 	};
 };
 

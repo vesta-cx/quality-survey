@@ -297,8 +297,7 @@
 			clearTimeout(gapTimeoutId);
 			gapTimeoutId = null;
 		}
-		const outgoingGain =
-			outgoing === 'a' ? gainNodeA : outgoing === 'b' ? gainNodeB : null;
+		const outgoingGain = outgoing === 'a' ? gainNodeA : outgoing === 'b' ? gainNodeB : null;
 		if (outgoingGain && audioCtx && isPlaying) {
 			const now = audioCtx.currentTime;
 			outgoingGain.gain.setValueAtTime(outgoingGain.gain.value, now);
@@ -377,9 +376,7 @@
 
 			const isSwitch = prevSelection === 'a' || prevSelection === 'b';
 			let offset =
-				prevSelection === null || prevSelection === 'neither'
-					? startTimeSeconds
-					: currentOffset;
+				prevSelection === null || prevSelection === 'neither' ? startTimeSeconds : currentOffset;
 			if (offset >= segmentEndSeconds - 0.01) {
 				offset = startTimeSeconds;
 			}
@@ -421,11 +418,14 @@
 						? startTimeSeconds
 						: continuationOffsetForGap;
 			} else {
-				offset =
-					currentOffset >= segmentEndSeconds - 0.01 ? startTimeSeconds : currentOffset;
+				offset = currentOffset >= segmentEndSeconds - 0.01 ? startTimeSeconds : currentOffset;
 			}
 			continuationOffsetForGap = offset;
-			scheduleFadeOutThenGap(prevSelection, () => playCandidate(candidate, offset), GAP_DURATION_MS);
+			scheduleFadeOutThenGap(
+				prevSelection,
+				() => playCandidate(candidate, offset),
+				GAP_DURATION_MS
+			);
 		} else if (transitionMode === 'gap_pause_resume') {
 			// Pause when switching; each track resumes from its own position (no syncing)
 			const isSwitch = prevSelection === 'a' || prevSelection === 'b';
@@ -450,7 +450,11 @@
 			playCandidate(candidate, offset);
 		} else {
 			// gap_restart: always restart from segment beginning
-			scheduleFadeOutThenGap(prevSelection, () => playCandidate(candidate, startTimeSeconds), GAP_DURATION_MS);
+			scheduleFadeOutThenGap(
+				prevSelection,
+				() => playCandidate(candidate, startTimeSeconds),
+				GAP_DURATION_MS
+			);
 		}
 	};
 
@@ -476,8 +480,7 @@
 		confirmed = true;
 		const position = getCurrentOffset(selection);
 
-		const ywltEl =
-			selection === 'a' ? elYwltA : selection === 'b' ? elYwltB : null;
+		const ywltEl = selection === 'a' ? elYwltA : selection === 'b' ? elYwltB : null;
 		if (ywltEl && gainNodeYwlt) {
 			crossfadeToYwlt(ywltEl, position);
 		} else {
@@ -565,15 +568,19 @@
 >
 	{#if isLoading}
 		<div class="flex min-h-screen w-full flex-col items-center justify-center">
-			<div class="flex h-48 w-full max-w-md items-center justify-center rounded-lg border border-dashed">
-				<p class="text-muted-foreground text-sm">Loading audio...</p>
+			<div
+				class="flex h-48 w-full max-w-md items-center justify-center rounded-lg border border-dashed"
+			>
+				<p class="text-sm text-muted-foreground">Loading audio...</p>
 			</div>
 		</div>
 	{:else if loadError}
 		<div class="flex min-h-screen w-full flex-col items-center justify-center">
-			<div class="flex h-48 w-full max-w-md flex-col items-center justify-center gap-2 rounded-lg border border-destructive">
-				<p class="text-destructive text-sm">{loadError}</p>
-				<p class="text-muted-foreground text-xs">Check your connection and try again.</p>
+			<div
+				class="flex h-48 w-full max-w-md flex-col items-center justify-center gap-2 rounded-lg border border-destructive"
+			>
+				<p class="text-sm text-destructive">{loadError}</p>
+				<p class="text-xs text-muted-foreground">Check your connection and try again.</p>
 			</div>
 		</div>
 	{:else}
@@ -585,8 +592,10 @@
 					'h-[50vh] w-full border-2 border-red-500/55 transition-all md:h-screen md:w-[50vw]',
 					'[mask-image:linear-gradient(white,white),radial-gradient(circle_44px_at_50%_100%,white,transparent)] [mask-composite:subtract] [mask-size:100%_100%,100%_100%] [mask-position:0_0,0_0] [mask-repeat:no-repeat,no-repeat]',
 					'md:[mask-image:linear-gradient(white,white),radial-gradient(circle_44px_at_100%_50%,white,transparent)]',
-					'focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-inset',
-					selection === 'a' ? 'bg-red-500/28 hover:bg-red-500/36' : 'bg-red-500/34 hover:bg-red-500/50',
+					'focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset',
+					selection === 'a'
+						? 'bg-red-500/28 hover:bg-red-500/36'
+						: 'bg-red-500/34 hover:bg-red-500/50',
 					selection !== 'a' && 'opacity-50'
 				)}
 				onclick={() => handleSelect('a')}
@@ -600,8 +609,10 @@
 					'h-[50vh] w-full border-2 border-blue-500/55 transition-all md:h-screen md:w-[50vw]',
 					'[mask-image:linear-gradient(white,white),radial-gradient(circle_44px_at_50%_0%,white,transparent)] [mask-composite:subtract] [mask-size:100%_100%,100%_100%] [mask-position:0_0,0_0] [mask-repeat:no-repeat,no-repeat]',
 					'md:[mask-image:linear-gradient(white,white),radial-gradient(circle_44px_at_0%_50%,white,transparent)]',
-					'focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-inset',
-					selection === 'b' ? 'bg-blue-500/28 hover:bg-blue-500/36' : 'bg-blue-500/34 hover:bg-blue-500/50',
+					'focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset',
+					selection === 'b'
+						? 'bg-blue-500/28 hover:bg-blue-500/36'
+						: 'bg-blue-500/34 hover:bg-blue-500/50',
 					selection !== 'b' && 'opacity-50'
 				)}
 				onclick={() => handleSelect('b')}
@@ -620,7 +631,7 @@
 						)}
 					>
 						<span class="text-4xl font-bold tracking-tight">A</span>
-						<span class="text-muted-foreground mt-1 text-xs">
+						<span class="mt-1 text-xs text-muted-foreground">
 							{selection === 'a' && isPlaying ? 'Playing...' : 'Click to play'}
 						</span>
 					</div>
@@ -631,7 +642,7 @@
 						)}
 					>
 						<span class="text-4xl font-bold tracking-tight">B</span>
-						<span class="text-muted-foreground mt-1 text-xs">
+						<span class="mt-1 text-xs text-muted-foreground">
 							{selection === 'b' && isPlaying ? 'Playing...' : 'Click to play'}
 						</span>
 					</div>
@@ -645,19 +656,21 @@
 			aria-hidden="true"
 		>
 			<div
-				class="grid min-h-screen w-full grid-cols-[0.5fr_2fr_0.5fr] grid-rows-[repeat(3,minmax(0,1fr))] gap-x-4 gap-y-2 px-6 py-6 md:min-h-[min(95vh,720px)] md:grid-rows-[auto_auto_auto] md:container md:items-center md:justify-items-center pointer-events-none [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_[role='button']]:pointer-events-auto"
+				class="pointer-events-none grid min-h-screen w-full grid-cols-[0.5fr_2fr_0.5fr] grid-rows-[repeat(3,minmax(0,1fr))] gap-x-4 gap-y-2 px-6 py-6 md:container md:min-h-[min(95vh,720px)] md:grid-rows-[auto_auto_auto] md:items-center md:justify-items-center [&_[role='button']]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto"
 			>
 				{#if header}
 					{@render header()}
 				{/if}
 
 				<!-- Neither: row 2 (middle) -->
-				<div class="col-start-2 row-start-2 flex flex-col items-center justify-center gap-2 self-center justify-self-center md:place-self-center">
+				<div
+					class="col-start-2 row-start-2 flex flex-col items-center justify-center gap-2 self-center justify-self-center md:place-self-center"
+				>
 					<button
 						type="button"
 						class={cn(
 							'relative flex size-20 items-center justify-center rounded-full border-2 transition-all',
-							'bg-card focus-visible:ring-ring/50 focus-visible:ring-2',
+							'bg-card focus-visible:ring-2 focus-visible:ring-ring/50',
 							'after:pointer-events-none after:absolute after:inset-0 after:rounded-full after:bg-transparent after:content-[""]',
 							selection === 'neither'
 								? 'border-orange-500/55 shadow-md after:bg-orange-500/18 hover:after:bg-orange-500/12'
@@ -668,25 +681,30 @@
 						aria-pressed={selection === 'neither'}
 						disabled={confirmed}
 					>
-						<span class="relative z-10 text-xl leading-none text-muted-foreground" aria-hidden="true">🤷</span>
+						<span
+							class="relative z-10 text-xl leading-none text-muted-foreground"
+							aria-hidden="true">🤷</span
+						>
 					</button>
 				</div>
 				<!-- Volume: row 3 (bottom right, desktop only) -->
 				{#if isDesktop}
-					<div class="col-start-3 row-start-3 flex items-center justify-end self-end justify-self-end md:place-self-end">
+					<div
+						class="col-start-3 row-start-3 flex items-center justify-end self-end justify-self-end md:place-self-end"
+					>
 						<Popover.Root>
 							<Popover.Trigger
 								openOnHover
 								openDelay={100}
 								closeDelay={150}
-								class="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+								class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
 								aria-label="Volume"
 							>
 								<Volume2Icon class="size-5" />
 							</Popover.Trigger>
 							<Popover.Content class="w-24 min-w-0 p-2" align="end" side="top">
 								<div class="flex flex-col items-center gap-2">
-									<span class="text-muted-foreground text-xs">
+									<span class="text-xs text-muted-foreground">
 										{Math.round(volume * 100)}%
 									</span>
 									<div class="flex h-28 items-center justify-center">
@@ -708,12 +726,14 @@
 				{/if}
 
 				<!-- Confirm + Shortcuts tooltip (hover): row 3 (bottom) -->
-				<div class="col-start-2 row-start-3 flex flex-col items-center gap-2 self-end justify-self-center w-full max-w-xs">
+				<div
+					class="col-start-2 row-start-3 flex w-full max-w-xs flex-col items-center gap-2 self-end justify-self-center"
+				>
 					{#if !confirmed}
 						<Tooltip.Provider delayDuration={0}>
 							<Tooltip.Root>
 								<Tooltip.Trigger
-									class="text-muted-foreground hover:text-foreground hidden inline-flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors md:inline-flex"
+									class="hidden inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
 									aria-label="Keyboard shortcuts"
 								>
 									Keyboard controls
@@ -722,7 +742,7 @@
 								<Tooltip.Portal>
 									<Tooltip.Content
 										arrowClasses="bg-popover"
-										class="border-border bg-popover text-popover-foreground grid min-w-72 max-w-sm grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5 border p-4 shadow-md [&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-muted [&_kbd]:px-1.5 [&_kbd]:py-0.5 [&_kbd]:font-mono [&_kbd]:text-[0.65rem] [&_kbd]:font-medium [&_kbd]:text-foreground"
+										class="grid max-w-sm min-w-72 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5 border border-border bg-popover p-4 text-popover-foreground shadow-md [&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-muted [&_kbd]:px-1.5 [&_kbd]:py-0.5 [&_kbd]:font-mono [&_kbd]:text-[0.65rem] [&_kbd]:font-medium [&_kbd]:text-foreground"
 									>
 										<span class="flex justify-end gap-1.5"><kbd>←</kbd>/<kbd>→</kbd></span>
 										<span>switch between A and B</span>
@@ -741,20 +761,20 @@
 						type="button"
 						class={cn(
 							'w-full rounded-lg px-6 py-3 text-sm font-medium transition-all',
-						selection
-							? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
-							: 'bg-muted text-muted-foreground cursor-not-allowed'
-					)}
-					onclick={handleConfirm}
-					disabled={!selection || confirmed}
-					aria-label="Confirm selection"
-				>
-					{confirmed
-						? 'Confirmed!'
-						: selection
-							? `Confirm: ${selection === 'neither' ? 'Neither' : selection.toUpperCase()}`
-							: 'Select A, B, or Neither'}
-				</button>
+							selection
+								? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+								: 'cursor-not-allowed bg-muted text-muted-foreground'
+						)}
+						onclick={handleConfirm}
+						disabled={!selection || confirmed}
+						aria-label="Confirm selection"
+					>
+						{confirmed
+							? 'Confirmed!'
+							: selection
+								? `Confirm: ${selection === 'neither' ? 'Neither' : selection.toUpperCase()}`
+								: 'Select A, B, or Neither'}
+					</button>
 				</div>
 			</div>
 		</div>

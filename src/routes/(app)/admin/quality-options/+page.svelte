@@ -7,9 +7,7 @@
 	const grouped = $derived(
 		data.codecs.map((codec) => ({
 			codec,
-			options: data.options
-				.filter((o) => o.codec === codec)
-				.sort((a, b) => b.bitrate - a.bitrate)
+			options: data.options.filter((o) => o.codec === codec).sort((a, b) => b.bitrate - a.bitrate)
 		}))
 	);
 </script>
@@ -24,7 +22,7 @@
 		<form method="POST" action="?/seed" use:enhance>
 			<button
 				type="submit"
-				class="bg-muted text-muted-foreground hover:bg-muted/80 rounded-lg px-4 py-2 text-sm font-medium"
+				class="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80"
 			>
 				Seed Defaults
 			</button>
@@ -32,20 +30,22 @@
 	</div>
 
 	{#if form?.message}
-		<div class="rounded-lg border bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+		<div
+			class="rounded-lg border bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200"
+		>
 			{form.message}
 		</div>
 	{/if}
 
 	{#if data.options.length === 0}
-		<p class="text-muted-foreground py-12 text-center text-sm">
+		<p class="py-12 text-center text-sm text-muted-foreground">
 			No quality options configured. Click "Seed Defaults" to populate the standard set.
 		</p>
 	{:else}
 		<div class="grid gap-6 lg:grid-cols-2">
 			{#each grouped as group}
 				{#if group.options.length > 0}
-					<div class="bg-card rounded-xl border p-4">
+					<div class="rounded-xl border bg-card p-4">
 						<h2 class="mb-3 text-lg font-medium uppercase">{group.codec}</h2>
 						<div class="space-y-2">
 							{#each group.options as option}

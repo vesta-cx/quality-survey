@@ -56,7 +56,6 @@
 </svelte:head>
 
 <div class="relative">
-
 	{@render children()}
 </div>
 <Toaster position="bottom-right" />

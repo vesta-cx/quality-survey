@@ -76,10 +76,10 @@
 
 {#if series.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium capitalize">
+		<h3 class="text-sm font-medium text-muted-foreground capitalize">
 			{codec} by Genre (Spaghetti)
 		</h3>
-		<p class="text-muted-foreground mt-0.5 text-xs">
+		<p class="mt-0.5 text-xs text-muted-foreground">
 			One line per genre. Lower = more codec-demanding (easier to hear artifacts).
 		</p>
 		<svg

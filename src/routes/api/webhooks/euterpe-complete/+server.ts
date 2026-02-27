@@ -50,7 +50,10 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			.where(eq(sourceFiles.id, source.id));
 
 		if (!existing) {
-			return json({ error: `Source file ${source.id} not found (submitted before this deployment?)` }, { status: 400 });
+			return json(
+				{ error: `Source file ${source.id} not found (submitted before this deployment?)` },
+				{ status: 400 }
+			);
 		}
 
 		await db

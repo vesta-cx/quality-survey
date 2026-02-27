@@ -18,7 +18,12 @@ import {
 } from './survey-config';
 
 /** round_mode returned by generateRound. Mixtape until mode-specific generators exist. */
-export type RoundMode = 'codec_compare' | 'bitrate_battle' | 'genre_trials' | 'tradeoff' | 'mixtape';
+export type RoundMode =
+	| 'codec_compare'
+	| 'bitrate_battle'
+	| 'genre_trials'
+	| 'tradeoff'
+	| 'mixtape';
 
 /** Default segment duration in ms; used when config is unavailable (e.g. tests) */
 export const SEGMENT_DURATION_MS = DEFAULT_SEGMENT_DURATION_MS;
@@ -40,11 +45,7 @@ const weightedRandom = <T extends string>(weights: Record<T, number>): T => {
 const randomElement = <T>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
 /** Pick count distinct items by weighted sampling. Uses copies to avoid mutating caller arrays. */
-const weightedRandomWithoutReplacement = <T>(
-	items: T[],
-	weights: number[],
-	count: number
-): T[] => {
+const weightedRandomWithoutReplacement = <T>(items: T[], weights: number[], count: number): T[] => {
 	if (items.length < count || weights.length !== items.length) return [];
 	const result: T[] = [];
 	const copy = [...items];
@@ -159,28 +160,26 @@ export const generateRound = async (
 			getSegmentDuration(db)
 		]);
 
-	const totalPair = pairingPool.reduce(
-		(sum, p) => sum + (pairingWeights[p] ?? 1),
-		0
-	);
+	const totalPair = pairingPool.reduce((sum, p) => sum + (pairingWeights[p] ?? 1), 0);
 	const pairNorm = Object.fromEntries(
 		pairingPool.map((p) => [p, (pairingWeights[p] ?? 1) / totalPair])
 	) as Record<PairingChoice, number>;
 	const pairingType = weightedRandom(pairNorm);
 
 	let transitionPool: readonly TransitionMode[] =
-		pairingType === 'different_song' ? (['gap_pause_resume'] as const) : ['gapless', 'gap_continue', 'gap_restart'];
+		pairingType === 'different_song'
+			? (['gap_pause_resume'] as const)
+			: ['gapless', 'gap_continue', 'gap_restart'];
 	if (enabledModes && enabledModes.length > 0) {
 		transitionPool = transitionPool.filter((m) => enabledModes.includes(m));
 	}
 	if (transitionPool.length === 0) {
 		transitionPool =
-			pairingType === 'different_song' ? ['gap_pause_resume'] : ['gapless', 'gap_continue', 'gap_restart'];
+			pairingType === 'different_song'
+				? ['gap_pause_resume']
+				: ['gapless', 'gap_continue', 'gap_restart'];
 	}
-	const transWeightsNorm = transitionPool.reduce(
-		(sum, m) => sum + (transitionWeights[m] ?? 1),
-		0
-	);
+	const transWeightsNorm = transitionPool.reduce((sum, m) => sum + (transitionWeights[m] ?? 1), 0);
 	const transProbs = Object.fromEntries(
 		transitionPool.map((m) => [m, (transitionWeights[m] ?? 1) / transWeightsNorm])
 	) as Record<TransitionMode, number>;
@@ -274,8 +273,10 @@ export const generateRound = async (
 		const weightsB = getWeightsForPool(candidatesB, permWeights);
 		const totalA = weightsA.reduce((a, b) => a + b, 0);
 		const totalB = weightsB.reduce((a, b) => a + b, 0);
-		const probsA = totalA > 0 ? weightsA.map((w) => w / totalA) : weightsA.map(() => 1 / weightsA.length);
-		const probsB = totalB > 0 ? weightsB.map((w) => w / totalB) : weightsB.map(() => 1 / weightsB.length);
+		const probsA =
+			totalA > 0 ? weightsA.map((w) => w / totalA) : weightsA.map(() => 1 / weightsA.length);
+		const probsB =
+			totalB > 0 ? weightsB.map((w) => w / totalB) : weightsB.map(() => 1 / weightsB.length);
 
 		let r = Math.random();
 		for (let i = 0; i < candidatesA.length; i++) {

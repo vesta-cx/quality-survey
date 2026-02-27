@@ -61,14 +61,17 @@ export const actions = {
 		if (!platform) return fail(500, { error: 'Platform not available' });
 
 		const db = getDb(platform);
-		const existing = await db.select({ message: easterEggMessages.message }).from(easterEggMessages).all();
+		const existing = await db
+			.select({ message: easterEggMessages.message })
+			.from(easterEggMessages)
+			.all();
 		const existingSet = new Set(existing.map((r) => r.message));
 
 		const seedMessages = [
 			'good data... yum',
 			'your ears are doing great today',
 			'we appreciate you',
-			'this data is *chef\'s kiss*',
+			"this data is *chef's kiss*",
 			'quality input from a quality human'
 		];
 
@@ -79,7 +82,10 @@ export const actions = {
 
 		return {
 			success: true,
-			message: toAdd.length > 0 ? `Added ${toAdd.length} easter egg messages` : 'All seed messages already present'
+			message:
+				toAdd.length > 0
+					? `Added ${toAdd.length} easter egg messages`
+					: 'All seed messages already present'
 		};
 	}
 } satisfies Actions;

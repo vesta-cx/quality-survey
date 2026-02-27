@@ -45,20 +45,21 @@
 
 <Popover.Root>
 	<Popover.Trigger
-		class="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+		class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
 		aria-label="Comparison settings"
 	>
 		<SettingsIcon class="size-5" />
 	</Popover.Trigger>
 	<Popover.Content class="w-72 p-4" align="start" side="top">
 		<div class="mb-4 flex flex-col gap-2">
-			<p class="text-muted-foreground text-sm font-medium">Theme</p>
+			<p class="text-sm font-medium text-muted-foreground">Theme</p>
 			<div class="flex gap-1 rounded-lg border border-border p-1">
 				{#each THEME_OPTIONS as { value: optValue, label, Icon } (optValue)}
 					<button
 						type="button"
 						onclick={() => settingsStore.setKey('theme', optValue)}
-						class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors {theme === optValue
+						class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors {theme ===
+						optValue
 							? 'bg-primary text-primary-foreground'
 							: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
 						aria-pressed={theme === optValue}
@@ -70,10 +71,8 @@
 				{/each}
 			</div>
 		</div>
-		<p class="text-muted-foreground mb-3 text-sm font-medium">
-			Comparison modes
-		</p>
-		<p class="text-muted-foreground mb-3 text-xs">
+		<p class="mb-3 text-sm font-medium text-muted-foreground">Comparison modes</p>
+		<p class="mb-3 text-xs text-muted-foreground">
 			Enable or disable transition types. Changes apply to the next round.
 		</p>
 		<div class="flex flex-col gap-2">
@@ -86,10 +85,14 @@
 				/>
 			{/each}
 			{#if allowDifferentSong}
-				<div class="text-muted-foreground flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2">
+				<div
+					class="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground"
+				>
 					<input type="checkbox" checked disabled class="mt-0.5 size-4 shrink-0" />
 					<div class="text-xs">
-						<span class="font-medium">{transitionLabels['gap_pause_resume'] ?? 'Gap (pause/resume)'}</span>
+						<span class="font-medium"
+							>{transitionLabels['gap_pause_resume'] ?? 'Gap (pause/resume)'}</span
+						>
 						<span class="block text-muted-foreground">
 							Different-song rounds use pause/resume.
 						</span>
@@ -107,13 +110,13 @@
 		<button
 			type="button"
 			onclick={onSave}
-			class="bg-primary text-primary-foreground hover:bg-primary/90 mt-3 w-full rounded-md px-3 py-2 text-sm font-medium"
+			class="mt-3 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 		>
 			Save
 		</button>
 		<a
 			href="/survey/setup"
-			class="text-muted-foreground hover:text-foreground mt-2 flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors"
+			class="mt-2 flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 		>
 			Change device
 		</a>

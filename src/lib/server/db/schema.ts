@@ -213,13 +213,7 @@ export const resultSnapshots = sqliteTable('result_snapshots', {
 	comparisonDifferentGapCount: integer('comparison_different_gap_count'),
 	// Complex matrices (JSON)
 	codecMatchupMatrix: text('codec_matchup_matrix', { mode: 'json' }).$type<
-		Record<
-			string,
-			Record<
-				string,
-				{ a_wins: number; b_wins: number; neither: number }
-			>
-		>
+		Record<string, Record<string, { a_wins: number; b_wins: number; neither: number }>>
 	>(),
 	bitrateGapConfidence: text('bitrate_gap_confidence', { mode: 'json' }).$type<
 		Record<string, { neither_rate: number; sample_size: number }>
@@ -249,9 +243,10 @@ export const resultSnapshots = sqliteTable('result_snapshots', {
 		content_wins: number;
 		quality_threshold?: number;
 	} | null>(),
-	qualityVsContentByGap: text('quality_vs_content_by_gap', { mode: 'json' }).$type<
-		Record<string, { quality_wins: number; content_wins: number }> | null
-	>(),
+	qualityVsContentByGap: text('quality_vs_content_by_gap', { mode: 'json' }).$type<Record<
+		string,
+		{ quality_wins: number; content_wins: number }
+	> | null>(),
 	// Snapshot expansion (pair-picking redesign)
 	sourcesetSongCount: integer('sourceset_song_count'),
 	sourcesetArtistCount: integer('sourceset_artist_count'),
@@ -270,9 +265,7 @@ export const resultSnapshots = sqliteTable('result_snapshots', {
 	topSongs: text('top_songs', { mode: 'json' }).$type<
 		Array<{ sourceId: string; title: string; score: number }>
 	>(),
-	topCodecs: text('top_codecs', { mode: 'json' }).$type<
-		Array<{ codec: string; score: number }>
-	>(),
+	topCodecs: text('top_codecs', { mode: 'json' }).$type<Array<{ codec: string; score: number }>>(),
 	insights: text('insights', { mode: 'json' }).$type<Record<string, unknown>>()
 });
 

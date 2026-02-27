@@ -74,10 +74,7 @@ export const DEFAULT_TRADEOFF_GAP_CONFIG: TradeoffGapConfig = {
 	]
 };
 
-const getConfigValue = async (
-	db: Database,
-	key: string
-): Promise<string | null> => {
+const getConfigValue = async (db: Database, key: string): Promise<string | null> => {
 	const row = await db
 		.select({ value: surveyConfig.value })
 		.from(surveyConfig)
@@ -86,18 +83,11 @@ const getConfigValue = async (
 	return row?.value ?? null;
 };
 
-const setConfigValue = async (
-	db: Database,
-	key: string,
-	value: string
-): Promise<void> => {
-	await db
-		.insert(surveyConfig)
-		.values({ key, value })
-		.onConflictDoUpdate({
-			target: surveyConfig.key,
-			set: { value }
-		});
+const setConfigValue = async (db: Database, key: string, value: string): Promise<void> => {
+	await db.insert(surveyConfig).values({ key, value }).onConflictDoUpdate({
+		target: surveyConfig.key,
+		set: { value }
+	});
 };
 
 export const getPairingWeights = async (db: Database): Promise<PairingWeights> => {
@@ -118,10 +108,7 @@ export const getPairingWeights = async (db: Database): Promise<PairingWeights> =
 	}
 };
 
-export const setPairingWeights = async (
-	db: Database,
-	weights: PairingWeights
-): Promise<void> => {
+export const setPairingWeights = async (db: Database, weights: PairingWeights): Promise<void> => {
 	await setConfigValue(db, PAIRING_WEIGHTS_KEY, JSON.stringify(weights));
 };
 
@@ -135,17 +122,12 @@ export const getPlaceboProbability = async (db: Database): Promise<number> => {
 	return parsed;
 };
 
-export const setPlaceboProbability = async (
-	db: Database,
-	probability: number
-): Promise<void> => {
+export const setPlaceboProbability = async (db: Database, probability: number): Promise<void> => {
 	const clamped = Math.max(0, Math.min(1, probability));
 	await setConfigValue(db, PLACEBO_PROBABILITY_KEY, String(clamped));
 };
 
-export const getPermutationWeights = async (
-	db: Database
-): Promise<PermutationWeights> => {
+export const getPermutationWeights = async (db: Database): Promise<PermutationWeights> => {
 	const value = await getConfigValue(db, PERMUTATION_WEIGHTS_KEY);
 	if (!value) return {};
 	try {
@@ -169,9 +151,7 @@ export const setPermutationWeights = async (
 	await setConfigValue(db, PERMUTATION_WEIGHTS_KEY, JSON.stringify(weights));
 };
 
-export const getTransitionWeights = async (
-	db: Database
-): Promise<TransitionWeights> => {
+export const getTransitionWeights = async (db: Database): Promise<TransitionWeights> => {
 	const value = await getConfigValue(db, TRANSITION_WEIGHTS_KEY);
 	if (!value) return { ...DEFAULT_TRANSITION_WEIGHTS };
 	try {
@@ -212,16 +192,11 @@ export const getModeWeights = async (db: Database): Promise<ModeWeights> => {
 	}
 };
 
-export const setModeWeights = async (
-	db: Database,
-	weights: ModeWeights
-): Promise<void> => {
+export const setModeWeights = async (db: Database, weights: ModeWeights): Promise<void> => {
 	await setConfigValue(db, MODE_WEIGHTS_KEY, JSON.stringify(weights));
 };
 
-export const getTradeoffGapConfig = async (
-	db: Database
-): Promise<TradeoffGapConfig> => {
+export const getTradeoffGapConfig = async (db: Database): Promise<TradeoffGapConfig> => {
 	const minVal = await getConfigValue(db, TRADEOFF_MIN_GAP_KEY);
 	const maxVal = await getConfigValue(db, TRADEOFF_MAX_GAP_KEY);
 	const pointsVal = await getConfigValue(db, TRADEOFF_GAP_POINTS_KEY);
@@ -241,9 +216,7 @@ export const getTradeoffGapConfig = async (
 			if (Array.isArray(parsed) && parsed.length > 0) {
 				config.gap_points = parsed.filter(
 					(p): p is TradeoffGapPoint =>
-						typeof p?.gap === 'number' &&
-						typeof p?.weight === 'number' &&
-						p.weight >= 0
+						typeof p?.gap === 'number' && typeof p?.weight === 'number' && p.weight >= 0
 				);
 			}
 		} catch {
@@ -261,9 +234,7 @@ export const setTradeoffGapConfig = async (
 	const maxClamped = Math.max(minClamped, config.max_gap);
 	const points = config.gap_points.filter(
 		(p): p is TradeoffGapPoint =>
-			typeof p.gap === 'number' &&
-			typeof p.weight === 'number' &&
-			p.weight >= 0
+			typeof p.gap === 'number' && typeof p.weight === 'number' && p.weight >= 0
 	);
 	await Promise.all([
 		setConfigValue(db, TRADEOFF_MIN_GAP_KEY, String(minClamped)),
@@ -288,10 +259,7 @@ export const getSegmentDuration = async (db: Database): Promise<number> => {
 	return parsed;
 };
 
-export const setSegmentDuration = async (
-	db: Database,
-	ms: number
-): Promise<void> => {
+export const setSegmentDuration = async (db: Database, ms: number): Promise<void> => {
 	const clamped = Math.max(1000, Math.min(120_000, Math.round(ms)));
 	await db
 		.insert(surveyConfig)

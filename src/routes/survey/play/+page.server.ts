@@ -18,7 +18,10 @@ const parseEnabledModes = (val: string | undefined): TransitionMode[] | null => 
 
 const parseEnabledPairing = (val: string | undefined): boolean => {
 	if (!val?.trim()) return true; // default: allow different_song
-	return val.split(',').map((s) => s.trim()).includes('different_song');
+	return val
+		.split(',')
+		.map((s) => s.trim())
+		.includes('different_song');
 };
 
 export const load: PageServerLoad = async ({ cookies, platform, locals }) => {

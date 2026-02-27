@@ -30,21 +30,21 @@
 
 {#if segments.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium">Comparison Type Distribution</h3>
-		<p class="text-muted-foreground mt-0.5 text-xs">
+		<h3 class="text-sm font-medium text-muted-foreground">Comparison Type Distribution</h3>
+		<p class="mt-0.5 text-xs text-muted-foreground">
 			Breakdown by song pairing and transition mode.
 		</p>
 		<div class="mt-3 space-y-2">
 			{#each segments as { label, count, pct } (label)}
 				<div class="flex items-center gap-3">
 					<span class="w-44 truncate text-sm">{label}</span>
-					<div class="bg-muted h-3 flex-1 overflow-hidden rounded-full">
+					<div class="h-3 flex-1 overflow-hidden rounded-full bg-muted">
 						<div
-							class="bg-primary h-full rounded-full transition-all"
+							class="h-full rounded-full bg-primary transition-all"
 							style="width: {Math.min(100, Math.round(pct * 100))}%"
 						></div>
 					</div>
-					<span class="text-muted-foreground w-16 text-right text-xs">
+					<span class="w-16 text-right text-xs text-muted-foreground">
 						{count} ({Math.round(pct * 100)}%)
 					</span>
 				</div>

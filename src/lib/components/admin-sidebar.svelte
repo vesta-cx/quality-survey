@@ -43,10 +43,7 @@
 	// Avatar fallback: first two chars of email (before @) or "AD"
 	const initials = $derived(
 		email.includes('@')
-			? email
-					.split('@')[0]
-					.slice(0, 2)
-					.toUpperCase()
+			? email.split('@')[0].slice(0, 2).toUpperCase()
 			: email.slice(0, 2).toUpperCase() || 'AD'
 	);
 
@@ -60,10 +57,10 @@
 			<Sidebar.MenuItem>
 				<a
 					href="/admin"
-					class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm transition-colors focus-visible:ring-2"
+					class="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm ring-sidebar-ring transition-colors group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 				>
 					<div
-						class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg"
+						class="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
 					>
 						<LayoutDashboardIcon class="size-4" />
 					</div>

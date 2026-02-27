@@ -58,22 +58,24 @@
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<div>
 			<h1 class="text-2xl font-bold">R2 Storage</h1>
-			<p class="text-muted-foreground text-sm">
+			<p class="text-sm text-muted-foreground">
 				Inspect object keys in the audio bucket. Keys are now filename-based (e.g.
 				<code class="rounded bg-muted px-1 py-0.5">sources/songname_abc12345.flac</code>,
-				<code class="rounded bg-muted px-1 py-0.5">candidates/{'{id}'}/songname_opus_128.opus</code>).
+				<code class="rounded bg-muted px-1 py-0.5">candidates/{'{id}'}/songname_opus_128.opus</code
+				>).
 			</p>
 		</div>
 	</div>
 
 	<div class="flex items-center gap-2">
-		<span class="text-muted-foreground text-sm">Prefix:</span>
+		<span class="text-sm text-muted-foreground">Prefix:</span>
 		<div class="flex gap-1">
 			{#each prefixOptions as opt}
 				<a
 					href={prefixUrl(opt.value)}
-					class="rounded-md border px-3 py-1.5 text-sm transition-colors {currentPrefix === opt.value
-						? 'bg-primary text-primary-foreground border-primary'
+					class="rounded-md border px-3 py-1.5 text-sm transition-colors {currentPrefix ===
+					opt.value
+						? 'border-primary bg-primary text-primary-foreground'
 						: 'border-input bg-transparent hover:bg-muted'}"
 				>
 					{opt.label}
@@ -94,7 +96,7 @@
 			<TableBody>
 				{#if data.objects.length === 0}
 					<TableRow>
-						<TableCell colspan={3} class="text-muted-foreground text-center py-8">
+						<TableCell colspan={3} class="py-8 text-center text-muted-foreground">
 							<DatabaseIcon class="mx-auto mb-2 size-8 opacity-50" />
 							<p>No objects found.</p>
 							{#if currentPrefix}

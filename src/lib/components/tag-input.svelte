@@ -56,11 +56,11 @@
 </script>
 
 <div
-	class="border-input bg-background flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-2 py-1.5"
+	class="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5"
 >
 	{#each tags as tag, i (tag + i)}
 		<span
-			class="border-input bg-muted/50 text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-sm"
+			class="inline-flex items-center gap-1 rounded-md border border-input bg-muted/50 px-2 py-0.5 text-sm text-foreground"
 		>
 			{tag}
 			<button
@@ -68,7 +68,7 @@
 				tabindex="-1"
 				aria-label="Remove {tag}"
 				onclick={() => remove(i)}
-				class="hover:bg-muted -mr-0.5 rounded p-0.5 transition-colors"
+				class="-mr-0.5 rounded p-0.5 transition-colors hover:bg-muted"
 			>
 				<X class="size-3" />
 			</button>

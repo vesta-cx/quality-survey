@@ -1,15 +1,17 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getDb } from '$lib/server/db';
-import { listeningDevices, DEVICE_TYPES, CONNECTION_TYPES, PRICE_TIERS } from '$lib/server/db/schema';
+import {
+	listeningDevices,
+	DEVICE_TYPES,
+	CONNECTION_TYPES,
+	PRICE_TIERS
+} from '$lib/server/db/schema';
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Normalize brand/model for dedup comparison. */
 function normalize(s: string): string {
-	return s
-		.trim()
-		.toLowerCase()
-		.replace(/\s+/g, ' ');
+	return s.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 function formatDeviceSubtitle(device: {
@@ -61,20 +63,19 @@ export const load: PageServerLoad = async ({ cookies, platform, url }) => {
 	}
 
 	// Full approved devices for autocomplete and unique-device resolution
-	const approvedDevices =
-		platform
-			? await getDb(platform)
-					.select({
-						id: listeningDevices.id,
-						deviceType: listeningDevices.deviceType,
-						connectionType: listeningDevices.connectionType,
-						brand: listeningDevices.brand,
-						model: listeningDevices.model,
-						priceTier: listeningDevices.priceTier
-					})
-					.from(listeningDevices)
-					.where(isNotNull(listeningDevices.approvedAt))
-			: [];
+	const approvedDevices = platform
+		? await getDb(platform)
+				.select({
+					id: listeningDevices.id,
+					deviceType: listeningDevices.deviceType,
+					connectionType: listeningDevices.connectionType,
+					brand: listeningDevices.brand,
+					model: listeningDevices.model,
+					priceTier: listeningDevices.priceTier
+				})
+				.from(listeningDevices)
+				.where(isNotNull(listeningDevices.approvedAt))
+		: [];
 
 	return {
 		deviceTypes: DEVICE_TYPES,

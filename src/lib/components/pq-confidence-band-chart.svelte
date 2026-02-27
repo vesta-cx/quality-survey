@@ -109,8 +109,8 @@
 </script>
 
 <div class={className}>
-	<h3 class="text-muted-foreground text-sm font-medium">PQ by Genre (Confidence Band)</h3>
-	<p class="text-muted-foreground mt-0.5 text-xs">
+	<h3 class="text-sm font-medium text-muted-foreground">PQ by Genre (Confidence Band)</h3>
+	<p class="mt-0.5 text-xs text-muted-foreground">
 		Band width = genre variance. Thin = consistent; thick = genre-sensitive.
 	</p>
 	<svg
@@ -144,12 +144,7 @@
 		{#each series as { codec, points } (codec)}
 			{@const color = codecColors[codec] ?? DEFAULT_COLORS[codec] ?? 'currentColor'}
 			{#if points.some((p) => p.minPq != null)}
-				<path
-					d={bandPath(points)}
-					fill={color}
-					fill-opacity="0.2"
-					stroke="none"
-				/>
+				<path d={bandPath(points)} fill={color} fill-opacity="0.2" stroke="none" />
 			{/if}
 			<path
 				d={pathForSeries(points)}
@@ -204,10 +199,7 @@
 		{#each series as { codec } (codec)}
 			{@const color = codecColors[codec] ?? DEFAULT_COLORS[codec] ?? 'currentColor'}
 			<div class="flex items-center gap-1.5">
-				<span
-					class="inline-block size-2.5 rounded-full"
-					style="background-color: {color}"
-				></span>
+				<span class="inline-block size-2.5 rounded-full" style="background-color: {color}"></span>
 				<span class="capitalize">{codec}</span>
 			</div>
 		{/each}

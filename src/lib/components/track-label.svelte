@@ -17,12 +17,11 @@
 		isDifferentSong?: boolean;
 	} = $props();
 
-	const selectedStyles =
-		'font-medium text-foreground ring-1 ring-primary ring-inset rounded px-1';
+	const selectedStyles = 'font-medium text-foreground ring-1 ring-primary ring-inset rounded px-1';
 	const unselectedStyles = 'text-muted-foreground';
 </script>
 
-<p class="text-muted-foreground text-sm">
+<p class="text-sm text-muted-foreground">
 	You were listening to
 	{#if isDifferentSong}
 		<span class="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
@@ -74,16 +73,11 @@
 				</span>
 			{/if}
 		</span>
+	{:else if streamUrlA}
+		<Anchor href={streamUrlA} class="font-medium text-foreground text-primary hover:underline">
+			{labelA}
+		</Anchor>
 	{:else}
-		{#if streamUrlA}
-			<Anchor
-				href={streamUrlA}
-				class="font-medium text-foreground text-primary hover:underline"
-			>
-				{labelA}
-			</Anchor>
-		{:else}
-			<span class="font-medium text-foreground">{labelA}</span>
-		{/if}
+		<span class="font-medium text-foreground">{labelA}</span>
 	{/if}
 </p>

@@ -3,12 +3,7 @@ import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { formatList, parseList } from '$lib/utils/list';
 import { getDb } from '$lib/server/db';
 import { getStorage } from '$lib/server/storage';
-import {
-	sourceFiles,
-	candidateFiles,
-	ephemeralStreamUrls,
-	answers
-} from '$lib/server/db/schema';
+import { sourceFiles, candidateFiles, ephemeralStreamUrls, answers } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
 const LOSSLESS_EXTS = new Set(['.flac', '.wav', '.aiff', '.alac', '.aif']);
@@ -24,7 +19,11 @@ export const load: PageServerLoad = async ({ platform }) => {
 	const db = getDb(platform);
 	const sources = await db.select().from(sourceFiles).all();
 	const allCandidates = await db
-		.select({ sourceFileId: candidateFiles.sourceFileId, codec: candidateFiles.codec, bitrate: candidateFiles.bitrate })
+		.select({
+			sourceFileId: candidateFiles.sourceFileId,
+			codec: candidateFiles.codec,
+			bitrate: candidateFiles.bitrate
+		})
 		.from(candidateFiles)
 		.all();
 
@@ -54,7 +53,8 @@ export const actions = {
 		}
 		if (!r2AccountId || !r2AccessKeyId || !r2SecretAccessKey) {
 			return fail(503, {
-				error: 'R2 S3 API not configured (PRIVATE_R2_ACCOUNT_ID, PRIVATE_R2_ACCESS_KEY_ID, PRIVATE_R2_SECRET_ACCESS_KEY)'
+				error:
+					'R2 S3 API not configured (PRIVATE_R2_ACCOUNT_ID, PRIVATE_R2_ACCESS_KEY_ID, PRIVATE_R2_SECRET_ACCESS_KEY)'
 			});
 		}
 
@@ -78,11 +78,11 @@ export const actions = {
 		const baseUrl = new URL(request.url).origin;
 		const webhookUrl = `${baseUrl}/api/webhooks/euterpe-complete`;
 
-		const filename = title
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '_')
-			.replace(/^_|_$/g, '')
-			|| 'audio';
+		const filename =
+			title
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '_')
+				.replace(/^_|_$/g, '') || 'audio';
 
 		const sourceFileId = crypto.randomUUID();
 		const db = getDb(platform);
@@ -402,6 +402,5 @@ export const actions = {
 		}
 
 		return { success: true, removed, partial: errors.length > 0 };
-	},
-
+	}
 } satisfies Actions;

@@ -30,7 +30,8 @@
 	const isIndeterminate = $derived(someSelected && !allSelected);
 
 	const LOSSLESS_EXTS = ['.flac', '.wav', '.aiff', '.alac', '.aif'];
-	const LOSSLESS_ACCEPT = '.flac,.wav,.aiff,.alac,.aif,audio/flac,audio/wav,audio/aiff,audio/x-aiff';
+	const LOSSLESS_ACCEPT =
+		'.flac,.wav,.aiff,.alac,.aif,audio/flac,audio/wav,audio/aiff,audio/x-aiff';
 
 	const handleSelectAllChange = (checked: boolean | 'indeterminate') => {
 		if (checked === true || checked === 'indeterminate') {
@@ -114,9 +115,7 @@
 
 	const entriesWithSource = $derived(
 		uploadSources
-			.flatMap((s) =>
-				s.entries.map((entry, j) => ({ entry, sourceId: s.id, indexInSource: j }))
-			)
+			.flatMap((s) => s.entries.map((entry, j) => ({ entry, sourceId: s.id, indexInSource: j })))
 			.sort((a, b) => a.entry.file.name.localeCompare(b.entry.file.name))
 	);
 	const entries = $derived(entriesWithSource.map((x) => x.entry));
@@ -135,10 +134,7 @@
 		return Array.from(files).filter((f) => f.size > 0 && isLossless(f.name));
 	};
 
-	const getSourceLabel = (
-		files: File[],
-		method: 'files' | 'folder' | 'drop'
-	): string => {
+	const getSourceLabel = (files: File[], method: 'files' | 'folder' | 'drop'): string => {
 		if (method === 'folder' && files.length > 0) {
 			const first = files[0] as File & { webkitRelativePath?: string };
 			const path = first.webkitRelativePath || first.name;
@@ -162,7 +158,10 @@
 
 		const newEntries: FileEntry[] = [];
 		for (const file of files) {
-			let title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+			let title = file.name
+				.replace(/\.[^.]+$/, '')
+				.replace(/[-_]/g, ' ')
+				.trim();
 			let artist = '';
 			let featuredArtists = '';
 			let remixArtists = '';
@@ -174,7 +173,9 @@
 			try {
 				const meta = await parseBlob(file);
 				if (meta.common.title) {
-					const { featuredArtists: fromTitle, cleanTitle } = extractFeaturedFromTitle(meta.common.title);
+					const { featuredArtists: fromTitle, cleanTitle } = extractFeaturedFromTitle(
+						meta.common.title
+					);
 					title = cleanTitle;
 					if (fromTitle) featuredArtists = fromTitle;
 					metadataSource = file.name;
@@ -198,10 +199,11 @@
 					licenseUrl =
 						typeof meta.common.license === 'string'
 							? meta.common.license
-							: (meta.common.license as string[])?.[0] ?? licenseUrl;
+							: ((meta.common.license as string[])?.[0] ?? licenseUrl);
 					metadataSource ??= file.name;
 				}
-				const urlFromWebsite = typeof meta.common.website === 'string' ? meta.common.website.trim() : null;
+				const urlFromWebsite =
+					typeof meta.common.website === 'string' ? meta.common.website.trim() : null;
 				const urlFromComment = extractUrlFromComment(meta.common.comment);
 				if (urlFromWebsite || urlFromComment) {
 					streamUrl = urlFromWebsite || urlFromComment || streamUrl;
@@ -236,14 +238,19 @@
 		const label = getSourceLabel(files, method);
 		uploadSources = [
 			...uploadSources,
-			{ id: crypto.randomUUID(), label, entries: newEntries.sort((a, b) => a.file.name.localeCompare(b.file.name)) }
+			{
+				id: crypto.randomUUID(),
+				label,
+				entries: newEntries.sort((a, b) => a.file.name.localeCompare(b.file.name))
+			}
 		];
 
 		// Auto-populate shared defaults from existing DB sources only (never from file metadata)
 		if (data.sources.length > 0) {
 			const first = data.sources[0];
 			if (first?.licenseUrl && !sharedLicenseUrl.trim()) sharedLicenseUrl = first.licenseUrl;
-			if (first?.streamUrl != null && !sharedStreamUrl.trim()) sharedStreamUrl = first.streamUrl ?? '';
+			if (first?.streamUrl != null && !sharedStreamUrl.trim())
+				sharedStreamUrl = first.streamUrl ?? '';
 		}
 	};
 
@@ -265,17 +272,15 @@
 		});
 	};
 
-	const collectFilesFromEntry = async (
-		item: DataTransferItem,
-		files: File[]
-	): Promise<void> => {
+	const collectFilesFromEntry = async (item: DataTransferItem, files: File[]): Promise<void> => {
 		const file = item.getAsFile();
 		if (file) {
 			if (isLossless(file.name)) files.push(file);
 			return;
 		}
-		const entry = (item as DataTransferItem & { webkitGetAsEntry?: () => FileSystemEntry | null })
-			.webkitGetAsEntry?.();
+		const entry = (
+			item as DataTransferItem & { webkitGetAsEntry?: () => FileSystemEntry | null }
+		).webkitGetAsEntry?.();
 		if (!entry) return;
 		if (entry.isFile) {
 			const f = await new Promise<File>((resolve, reject) => {
@@ -290,17 +295,14 @@
 				new Promise((resolve, reject) => {
 					const entries: FileSystemEntry[] = [];
 					const readBatch = () => {
-						reader.readEntries(
-							(batch: FileSystemEntry[]) => {
-								if (batch.length === 0) {
-									resolve(entries);
-									return;
-								}
-								entries.push(...batch);
-								readBatch();
-							},
-							reject
-						);
+						reader.readEntries((batch: FileSystemEntry[]) => {
+							if (batch.length === 0) {
+								resolve(entries);
+								return;
+							}
+							entries.push(...batch);
+							readBatch();
+						}, reject);
 					};
 					readBatch();
 				});
@@ -316,17 +318,14 @@
 						const children = await new Promise<FileSystemEntry[]>((resolve, reject) => {
 							const acc: FileSystemEntry[] = [];
 							const readBatch = () => {
-								reader.readEntries(
-									(batch: FileSystemEntry[]) => {
-										if (batch.length === 0) {
-											resolve(acc);
-											return;
-										}
-										acc.push(...batch);
-										readBatch();
-									},
-									reject
-								);
+								reader.readEntries((batch: FileSystemEntry[]) => {
+									if (batch.length === 0) {
+										resolve(acc);
+										return;
+									}
+									acc.push(...batch);
+									readBatch();
+								}, reject);
 							};
 							readBatch();
 						});
@@ -546,7 +545,7 @@
 		<h1 class="text-2xl font-bold tracking-tight">Source Files</h1>
 		<Dialog.Root bind:open={showUploadPanel}>
 			<Dialog.Trigger
-				class="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors"
+				class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
 			>
 				<Upload class="size-4" aria-hidden="true" />
 				Upload
@@ -557,26 +556,24 @@
 				<Dialog.Header>
 					<Dialog.Title>Upload Lossless Audio</Dialog.Title>
 					<Dialog.Description>
-						Drop or select FLAC, WAV, AIFF, or ALAC files. Euterpe will transcode them to FLAC, Opus@128,
-						and Opus@96.
+						Drop or select FLAC, WAV, AIFF, or ALAC files. Euterpe will transcode them to FLAC,
+						Opus@128, and Opus@96.
 					</Dialog.Description>
 				</Dialog.Header>
 				<div class="mt-4 space-y-4">
 					<div
 						role="presentation"
-						class="border-border hover:border-primary/50 flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-6 transition-colors {isDragging
+						class="flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border p-6 transition-colors hover:border-primary/50 {isDragging
 							? 'border-primary bg-primary/5'
 							: 'bg-muted/20'}"
 						ondragover={handleDragOver}
 						ondragleave={handleDragLeave}
 						ondrop={handleDrop}
 					>
-						<Music class="text-muted-foreground size-10" aria-hidden="true" />
+						<Music class="size-10 text-muted-foreground" aria-hidden="true" />
 						<div class="text-center">
 							<p class="text-sm font-medium">Drop files or folders, or use the buttons below</p>
-							<p class="text-muted-foreground mt-0.5 text-xs">
-								FLAC · WAV · AIFF · ALAC
-							</p>
+							<p class="mt-0.5 text-xs text-muted-foreground">FLAC · WAV · AIFF · ALAC</p>
 						</div>
 						<div class="flex gap-2">
 							<input
@@ -601,7 +598,7 @@
 							/>
 							<button
 								type="button"
-								class="border-input hover:bg-accent flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium transition-colors"
+								class="flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
 								onclick={() => fileInputRef?.click()}
 							>
 								<Upload class="size-3.5" aria-hidden="true" />
@@ -609,7 +606,7 @@
 							</button>
 							<button
 								type="button"
-								class="border-input hover:bg-accent flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium transition-colors"
+								class="flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
 								onclick={() => dirInputRef?.click()}
 							>
 								<FolderOpen class="size-3.5" aria-hidden="true" />
@@ -632,12 +629,12 @@
 							<ul class="flex flex-wrap gap-2">
 								{#each uploadSources as source (source.id)}
 									<li
-										class="border-input bg-muted/30 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+										class="flex items-center gap-2 rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm"
 									>
 										<span class="truncate">{source.label}</span>
 										<button
 											type="button"
-											class="text-muted-foreground hover:text-destructive shrink-0 rounded p-1 transition-colors"
+											class="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
 											aria-label="Remove {source.label}"
 											onclick={() => removeSource(source.id)}
 										>
@@ -659,9 +656,11 @@
 									required
 									bind:value={sharedLicenseUrl}
 									placeholder="https://…"
-									class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+									class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 								/>
-								<p class="text-muted-foreground text-xs">Default for all tracks. Override per-file below.</p>
+								<p class="text-xs text-muted-foreground">
+									Default for all tracks. Override per-file below.
+								</p>
 							</div>
 							<div class="space-y-1.5">
 								<label for="shared-stream" class="text-sm font-medium">Stream URL (shared)</label>
@@ -670,9 +669,11 @@
 									type="url"
 									bind:value={sharedStreamUrl}
 									placeholder="https://…"
-									class="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+									class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 								/>
-								<p class="text-muted-foreground text-xs">Shown after survey. Override per-file below.</p>
+								<p class="text-xs text-muted-foreground">
+									Shown after survey. Override per-file below.
+								</p>
 							</div>
 						</div>
 
@@ -689,7 +690,7 @@
 										<div class="flex items-start gap-3 p-3">
 											<button
 												type="button"
-												class="text-muted-foreground hover:text-foreground shrink-0 mt-0.5 transition-colors"
+												class="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
 												aria-expanded={entry.expanded}
 												aria-label={entry.expanded ? 'Collapse' : 'Expand'}
 												onclick={() => (entry.expanded = !entry.expanded)}
@@ -703,11 +704,13 @@
 												<div class="flex items-center justify-between gap-2">
 													<span class="truncate font-medium">{entry.title || entry.file.name}</span>
 													<span
-														class="size-2 shrink-0 rounded-full {complete ? 'bg-green-500' : 'bg-amber-500'}"
+														class="size-2 shrink-0 rounded-full {complete
+															? 'bg-green-500'
+															: 'bg-amber-500'}"
 														aria-hidden="true"
 													></span>
 												</div>
-												<p class="text-muted-foreground mt-0.5 truncate text-xs">
+												<p class="mt-0.5 truncate text-xs text-muted-foreground">
 													{formatTrackLabel({
 														title: entry.title,
 														artist: entry.artist,
@@ -721,7 +724,7 @@
 											</div>
 											<button
 												type="button"
-												class="text-muted-foreground hover:text-destructive shrink-0 rounded p-1 transition-colors"
+												class="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
 												aria-label="Remove {entry.file.name}"
 												onclick={() => removeEntry(i)}
 											>
@@ -736,7 +739,7 @@
 														id="title-{i}"
 														type="text"
 														bind:value={entry.title}
-														class="border-input bg-background h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+														class="h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 													/>
 												</div>
 												<div class="space-y-1">
@@ -778,7 +781,7 @@
 														type="url"
 														bind:value={entry.licenseUrl}
 														placeholder={sharedLicenseUrl || 'Uses shared'}
-														class="border-input bg-background h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+														class="h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 													/>
 												</div>
 												<div class="space-y-1 sm:col-span-2">
@@ -788,12 +791,14 @@
 														type="url"
 														bind:value={entry.streamUrl}
 														placeholder={sharedStreamUrl || 'Optional'}
-														class="border-input bg-background h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+														class="h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 													/>
 												</div>
 												{#if entry.metadataSource}
-													<p class="text-muted-foreground sm:col-span-2 text-xs">
-														Metadata from <code class="rounded bg-muted px-1 py-0.5">{entry.metadataSource}</code>
+													<p class="text-xs text-muted-foreground sm:col-span-2">
+														Metadata from <code class="rounded bg-muted px-1 py-0.5"
+															>{entry.metadataSource}</code
+														>
 													</p>
 												{/if}
 											</div>
@@ -804,13 +809,13 @@
 						</div>
 
 						<div class="flex items-center justify-between gap-4 border-t border-border/60 pt-4">
-							<p class="text-muted-foreground text-sm">
+							<p class="text-sm text-muted-foreground">
 								{entries.filter(isComplete).length} of {entries.length} ready
 							</p>
 							<div class="flex gap-2">
 								<button
 									type="button"
-									class="border-input hover:bg-accent rounded-lg border px-4 py-2 text-sm font-medium"
+									class="rounded-lg border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
 									onclick={handleResetUpload}
 								>
 									Cancel
@@ -818,7 +823,7 @@
 								<button
 									type="button"
 									disabled={!allComplete}
-									class="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium disabled:cursor-not-allowed"
+									class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 									onclick={handleUploadSubmit}
 								>
 									<Upload class="size-4" aria-hidden="true" />
@@ -833,23 +838,29 @@
 	</div>
 
 	{#if form?.error}
-		<div class="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
+		<div
+			class="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
+		>
 			{form.error}
 		</div>
 	{/if}
 
 	{#if data.sources.length === 0}
-		<div class="text-muted-foreground flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+		<div
+			class="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-muted-foreground"
+		>
 			<Music class="mb-3 size-12 opacity-40" aria-hidden="true" />
 			<p class="text-sm">No source files yet.</p>
-			<p class="text-muted-foreground mt-0.5 text-xs">Click Upload to add lossless audio for transcoding.</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">
+				Click Upload to add lossless audio for transcoding.
+			</p>
 		</div>
 	{:else}
 		<div class="space-y-4">
 			<div
-				class="bg-muted/30 flex items-center justify-between gap-4 rounded-lg border px-4 py-2.5"
+				class="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-2.5"
 			>
-				<span class="text-muted-foreground text-sm">
+				<span class="text-sm text-muted-foreground">
 					{someSelected
 						? `${selectedIds.size} source${selectedIds.size === 1 ? '' : 's'} selected`
 						: 'Select sources to approve or delete'}
@@ -867,7 +878,7 @@
 						<button
 							type="submit"
 							disabled={!someSelected}
-							class="text-primary hover:bg-primary/10 flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+							class="flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
 						>
 							<CircleCheck class="size-4" aria-hidden="true" />
 							Approve
@@ -885,7 +896,7 @@
 						<button
 							type="submit"
 							disabled={!someSelected}
-							class="text-destructive hover:bg-destructive/10 flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+							class="flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
 							onclick={(e) => {
 								if (
 									!someSelected ||
@@ -934,7 +945,7 @@
 								<td class="w-8 px-2 py-2 pr-0">
 									<button
 										type="button"
-										class="text-muted-foreground hover:text-foreground flex size-6 items-center justify-center rounded transition-colors"
+										class="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
 										aria-expanded={isExpanded}
 										aria-label={isExpanded ? 'Collapse' : 'Expand'}
 										onclick={() => handleToggleExpanded(source.id)}
@@ -953,12 +964,15 @@
 									/>
 								</td>
 								<td class="px-4 py-2 font-medium">{source.title}</td>
-								<td class="text-muted-foreground max-w-xs truncate px-4 py-2" title={formatTrackLabel({
-									title: source.title,
-									artist: source.artist,
-									featuredArtists: source.featuredArtists,
-									remixArtists: source.remixArtists
-								})}>
+								<td
+									class="max-w-xs truncate px-4 py-2 text-muted-foreground"
+									title={formatTrackLabel({
+										title: source.title,
+										artist: source.artist,
+										featuredArtists: source.featuredArtists,
+										remixArtists: source.remixArtists
+									})}
+								>
 									{formatTrackLabel({
 										title: source.title,
 										artist: source.artist,
@@ -966,11 +980,13 @@
 										remixArtists: source.remixArtists
 									})}
 								</td>
-								<td class="text-muted-foreground px-4 py-2">{source.genre ?? '—'}</td>
-								<td class="text-muted-foreground px-4 py-2">
-									{source.duration != null ? `${Math.round(source.duration / 1000)}s` : 'Transcoding…'}
+								<td class="px-4 py-2 text-muted-foreground">{source.genre ?? '—'}</td>
+								<td class="px-4 py-2 text-muted-foreground">
+									{source.duration != null
+										? `${Math.round(source.duration / 1000)}s`
+										: 'Transcoding…'}
 								</td>
-								<td class="text-muted-foreground px-4 py-2">
+								<td class="px-4 py-2 text-muted-foreground">
 									{candidates.length > 0
 										? candidates.map((c) => `${c.codec}@${c.bitrate}`).join(', ')
 										: '—'}
@@ -1004,9 +1020,11 @@
 												<input type="hidden" name="id" value={source.id} />
 												<button
 													type="submit"
-													class="text-primary text-xs hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+													class="text-xs text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
 													disabled={source.r2Key == null}
-													title={source.r2Key == null ? 'Wait for transcoding to complete' : undefined}
+													title={source.r2Key == null
+														? 'Wait for transcoding to complete'
+														: undefined}
 												>
 													Approve
 												</button>
@@ -1021,12 +1039,10 @@
 											<input type="hidden" name="id" value={source.id} />
 											<button
 												type="submit"
-												class="text-muted-foreground hover:text-destructive text-xs hover:underline"
+												class="text-xs text-muted-foreground hover:text-destructive hover:underline"
 												onclick={(e) => {
 													if (
-														!confirm(
-															'Remove this source and all its files? This cannot be undone.'
-														)
+														!confirm('Remove this source and all its files? This cannot be undone.')
 													) {
 														e.preventDefault();
 													}
@@ -1064,13 +1080,17 @@
 															<tbody>
 																{#each bitrates as bitrate}
 																	<tr class="border-b last:border-b-0">
-																		<td class="text-muted-foreground px-2 py-1 font-mono">{bitrate}</td>
+																		<td class="px-2 py-1 font-mono text-muted-foreground"
+																			>{bitrate}</td
+																		>
 																		{#each codecs as codec}
 																			<td class="px-2 py-1 text-center">
 																				{#if hasCandidate(codec, bitrate)}
 																					<span class="text-primary" aria-hidden="true">✓</span>
 																				{:else}
-																					<span class="text-muted-foreground/40" aria-hidden="true">—</span>
+																					<span class="text-muted-foreground/40" aria-hidden="true"
+																						>—</span
+																					>
 																				{/if}
 																			</td>
 																		{/each}
@@ -1080,7 +1100,10 @@
 														</table>
 													</div>
 												{:else}
-													<p class="text-muted-foreground text-sm">No transcoded candidates yet. Euterpe will add them when transcoding completes.</p>
+													<p class="text-sm text-muted-foreground">
+														No transcoded candidates yet. Euterpe will add them when transcoding
+														completes.
+													</p>
 												{/if}
 											</div>
 
@@ -1103,18 +1126,22 @@
 												>
 													<input type="hidden" name="id" value={source.id} />
 													<div class="space-y-1">
-														<label for="meta-title-{source.id}" class="text-xs font-medium">Title</label>
+														<label for="meta-title-{source.id}" class="text-xs font-medium"
+															>Title</label
+														>
 														<input
 															id="meta-title-{source.id}"
 															name="title"
 															type="text"
 															value={source.title}
 															required
-															class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+															class="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-artist-{source.id}" class="text-xs font-medium">Artist</label>
+														<label for="meta-artist-{source.id}" class="text-xs font-medium"
+															>Artist</label
+														>
 														<TagInput
 															id="meta-artist-{source.id}"
 															name="artist"
@@ -1123,7 +1150,9 @@
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-featured-{source.id}" class="text-xs font-medium">Featured</label>
+														<label for="meta-featured-{source.id}" class="text-xs font-medium"
+															>Featured</label
+														>
 														<TagInput
 															id="meta-featured-{source.id}"
 															name="featured_artists"
@@ -1132,7 +1161,9 @@
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-remix-{source.id}" class="text-xs font-medium">Remix</label>
+														<label for="meta-remix-{source.id}" class="text-xs font-medium"
+															>Remix</label
+														>
 														<TagInput
 															id="meta-remix-{source.id}"
 															name="remix_artists"
@@ -1141,7 +1172,9 @@
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-genre-{source.id}" class="text-xs font-medium">Genre</label>
+														<label for="meta-genre-{source.id}" class="text-xs font-medium"
+															>Genre</label
+														>
 														<TagInput
 															id="meta-genre-{source.id}"
 															name="genre"
@@ -1150,29 +1183,35 @@
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-license-{source.id}" class="text-xs font-medium">License URL</label>
+														<label for="meta-license-{source.id}" class="text-xs font-medium"
+															>License URL</label
+														>
 														<input
 															id="meta-license-{source.id}"
 															name="license_url"
 															type="url"
 															value={source.licenseUrl}
 															required
-															class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+															class="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-stream-{source.id}" class="text-xs font-medium">Stream URL</label>
+														<label for="meta-stream-{source.id}" class="text-xs font-medium"
+															>Stream URL</label
+														>
 														<input
 															id="meta-stream-{source.id}"
 															name="stream_url"
 															type="url"
 															value={source.streamUrl ?? ''}
 															placeholder="https://…"
-															class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+															class="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 														/>
 													</div>
 													<div class="space-y-1">
-														<label for="meta-duration-{source.id}" class="text-xs font-medium">Duration (ms)</label>
+														<label for="meta-duration-{source.id}" class="text-xs font-medium"
+															>Duration (ms)</label
+														>
 														<input
 															id="meta-duration-{source.id}"
 															name="duration"
@@ -1180,13 +1219,13 @@
 															value={source.duration ?? ''}
 															min="0"
 															placeholder="Set by transcoding"
-															class="border-input bg-background flex h-9 w-full rounded-md border px-2 py-1.5 text-sm"
+															class="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
 														/>
 													</div>
 													<div class="flex items-end sm:col-span-2 lg:col-span-3">
 														<button
 															type="submit"
-															class="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1.5 text-sm font-medium"
+															class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 														>
 															Save Metadata
 														</button>

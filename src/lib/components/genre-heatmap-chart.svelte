@@ -51,19 +51,11 @@
 
 {#if data.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium">PQ by Codec×Bitrate and Genre</h3>
-		<p class="text-muted-foreground mt-0.5 text-xs">
-			Cell = PQ % for that config in that genre.
-		</p>
+		<h3 class="text-sm font-medium text-muted-foreground">PQ by Codec×Bitrate and Genre</h3>
+		<p class="mt-0.5 text-xs text-muted-foreground">Cell = PQ % for that config in that genre.</p>
 		{#await import('@vesta-cx/ui/components/ui/heatmap') then { Heatmap }}
 			<div class="mt-4">
-				<Heatmap
-					data={data}
-					{rows}
-					{cols}
-					rowLabel="Config"
-					colLabel="Genre"
-				/>
+				<Heatmap {data} {rows} {cols} rowLabel="Config" colLabel="Genre" />
 			</div>
 		{/await}
 	</div>

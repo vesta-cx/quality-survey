@@ -20,10 +20,10 @@
 
 {#if entries.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium">Codec Efficiency Ratios</h3>
-		<p class="text-muted-foreground mt-0.5 text-xs">
-			At equal perceptual quality, how much more efficient is codec A vs B? (e.g. 1.4 = A needs
-			~40% less bitrate)
+		<h3 class="text-sm font-medium text-muted-foreground">Codec Efficiency Ratios</h3>
+		<p class="mt-0.5 text-xs text-muted-foreground">
+			At equal perceptual quality, how much more efficient is codec A vs B? (e.g. 1.4 = A needs ~40%
+			less bitrate)
 		</p>
 		<div class="mt-3 space-y-2">
 			{#each entries as [pair, ratio]}

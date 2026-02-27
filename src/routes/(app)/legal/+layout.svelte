@@ -6,7 +6,7 @@
 
 <Section>
 	<SectionContent class="flex flex-col items-center">
-		<div class="text-foreground prose prose-sm w-full max-w-prose text-left dark:prose-invert">
+		<div class="prose prose-sm w-full max-w-prose text-left text-foreground dark:prose-invert">
 			{@render children()}
 		</div>
 	</SectionContent>

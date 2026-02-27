@@ -37,7 +37,7 @@
 
 {#if matchups.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium">Headline Matchups</h3>
+		<h3 class="text-sm font-medium text-muted-foreground">Headline Matchups</h3>
 		<div class="mt-3 space-y-3">
 			{#each matchups as { label, wins, total }}
 				<div class="flex items-center justify-between text-sm">
@@ -45,7 +45,7 @@
 					<span>
 						<span class="font-medium">{wins}</span>
 						<span class="text-muted-foreground"> / {total}</span>
-						<span class="text-muted-foreground ml-1">
+						<span class="ml-1 text-muted-foreground">
 							({total > 0 ? Math.round((wins / total) * 100) : 0}%)
 						</span>
 					</span>

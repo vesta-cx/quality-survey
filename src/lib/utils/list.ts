@@ -19,9 +19,7 @@ export const unescapeToken = (s: string): string => {
 
 /** Escape for storage: \ → \\, ; → \; */
 const escapeToken = (s: string): string => {
-	return String(s)
-		.replace(/\\/g, '\\\\')
-		.replace(/;/g, '\\;');
+	return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;');
 };
 
 /**
@@ -57,9 +55,7 @@ export const formatList = (arr: string[]): string => {
 };
 
 /** Format artists for display: "artist1, artist2 & artist3" (last two joined with " & "). */
-export const formatArtistsForDisplay = (
-	s: string | string[] | null | undefined
-): string => {
+export const formatArtistsForDisplay = (s: string | string[] | null | undefined): string => {
 	const arr = Array.isArray(s) ? s : parseList(s);
 	if (arr.length === 0) return '';
 	if (arr.length === 1) return arr[0];

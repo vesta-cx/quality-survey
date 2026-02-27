@@ -67,8 +67,8 @@
 </script>
 
 <div class={className}>
-	<h3 class="text-muted-foreground text-sm font-medium">FLAC vs Lossy — Transparency Threshold</h3>
-	<p class="text-muted-foreground mt-0.5 text-xs">
+	<h3 class="text-sm font-medium text-muted-foreground">FLAC vs Lossy — Transparency Threshold</h3>
+	<p class="mt-0.5 text-xs text-muted-foreground">
 		When FLAC win rate crosses 50%, listeners can't reliably tell lossy from lossless.
 	</p>
 	<svg

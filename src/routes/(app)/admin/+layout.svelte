@@ -22,36 +22,33 @@
 
 {#if data.session}
 	{#if browser}
-	<Sidebar.Provider>
-		<AdminSidebar
-			email={data.session.email}
-			profilePictureUrl={data.session.profilePictureUrl}
-		/>
-		<Sidebar.Inset>
-			<header
-				class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
-			>
-				<div class="flex items-center gap-2 px-4">
-					<Sidebar.Trigger class="-ms-1" />
-					<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
-					<Breadcrumb.Root>
-						<Breadcrumb.List>
-							<Breadcrumb.Item class="hidden md:block">
-								<Breadcrumb.Link href="/admin">Admin</Breadcrumb.Link>
-							</Breadcrumb.Item>
-							<Breadcrumb.Separator class="hidden md:block" />
-							<Breadcrumb.Item>
-								<Breadcrumb.Page>{breadcrumbLabel}</Breadcrumb.Page>
-							</Breadcrumb.Item>
-						</Breadcrumb.List>
-					</Breadcrumb.Root>
+		<Sidebar.Provider>
+			<AdminSidebar email={data.session.email} profilePictureUrl={data.session.profilePictureUrl} />
+			<Sidebar.Inset>
+				<header
+					class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
+				>
+					<div class="flex items-center gap-2 px-4">
+						<Sidebar.Trigger class="-ms-1" />
+						<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
+						<Breadcrumb.Root>
+							<Breadcrumb.List>
+								<Breadcrumb.Item class="hidden md:block">
+									<Breadcrumb.Link href="/admin">Admin</Breadcrumb.Link>
+								</Breadcrumb.Item>
+								<Breadcrumb.Separator class="hidden md:block" />
+								<Breadcrumb.Item>
+									<Breadcrumb.Page>{breadcrumbLabel}</Breadcrumb.Page>
+								</Breadcrumb.Item>
+							</Breadcrumb.List>
+						</Breadcrumb.Root>
+					</div>
+				</header>
+				<div class="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-0">
+					{@render children()}
 				</div>
-			</header>
-			<div class="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-0">
-				{@render children()}
-			</div>
-		</Sidebar.Inset>
-	</Sidebar.Provider>
+			</Sidebar.Inset>
+		</Sidebar.Provider>
 	{:else}
 		<!-- SSR fallback: sidebar uses Tooltip/setContext which fails during SSR -->
 		<div class="flex min-h-screen flex-col gap-4 p-4">

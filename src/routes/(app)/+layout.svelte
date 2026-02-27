@@ -21,8 +21,8 @@
 			id: 'cloudflare',
 			name: 'Cloudflare',
 			description: 'Web analytics and performance monitoring',
-			privacyUrl: 'https://www.cloudflare.com/privacypolicy/',
-		},
+			privacyUrl: 'https://www.cloudflare.com/privacypolicy/'
+		}
 	];
 </script>
 

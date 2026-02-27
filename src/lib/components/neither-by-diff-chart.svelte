@@ -24,21 +24,21 @@
 </script>
 
 <div class={className}>
-	<h3 class="text-muted-foreground text-sm font-medium">Uncertainty vs Bitrate Difference</h3>
-	<p class="text-muted-foreground mt-0.5 text-xs">
+	<h3 class="text-sm font-medium text-muted-foreground">Uncertainty vs Bitrate Difference</h3>
+	<p class="mt-0.5 text-xs text-muted-foreground">
 		Closer bitrates → more "neither" (harder to tell apart).
 	</p>
 	<div class="mt-4 flex items-end gap-2" style="min-height: 8rem;">
 		{#each bars as { bucket, value } (bucket)}
 			<div class="flex flex-1 flex-col items-center gap-1">
 				<div
-					class="bg-primary/80 w-full min-w-0 max-w-16 rounded-t transition-all"
+					class="w-full max-w-16 min-w-0 rounded-t bg-primary/80 transition-all"
 					style="height: {Math.max(4, (value / maxVal) * 96)}px"
 					role="img"
 					aria-label="{bucket} kbps diff: {(value * 100).toFixed(0)}% neither"
 				></div>
-				<span class="text-muted-foreground text-[10px]">{bucket}</span>
-				<span class="text-muted-foreground text-[10px]">{(value * 100).toFixed(0)}%</span>
+				<span class="text-[10px] text-muted-foreground">{bucket}</span>
+				<span class="text-[10px] text-muted-foreground">{(value * 100).toFixed(0)}%</span>
 			</div>
 		{/each}
 	</div>

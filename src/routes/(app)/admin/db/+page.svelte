@@ -36,8 +36,7 @@
 		return String(v);
 	};
 
-	const truncate = (s: string, max = 80) =>
-		s.length <= max ? s : s.slice(0, max) + '…';
+	const truncate = (s: string, max = 80) => (s.length <= max ? s : s.slice(0, max) + '…');
 
 	const handleClearClick = () => {
 		clearDialogOpen = true;
@@ -94,7 +93,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-2xl font-bold">Database Inspector</h1>
-			<p class="text-muted-foreground mt-1 text-sm">
+			<p class="mt-1 text-sm text-muted-foreground">
 				Browse all D1 tables. Large tables are limited to 500 rows.
 			</p>
 		</div>
@@ -131,7 +130,7 @@
 				<div class="flex flex-wrap gap-x-4 gap-y-2" class:hidden={confirmStep === 'confirm'}>
 					{#each data.clearableTables ?? [] as t (t.key)}
 						<label class="flex cursor-pointer items-center gap-2 text-sm">
-							<input type="checkbox" name="clear" value={t.key} class="border-input rounded" />
+							<input type="checkbox" name="clear" value={t.key} class="rounded border-input" />
 							<span>{t.label}</span>
 						</label>
 					{/each}
@@ -141,14 +140,8 @@
 				{/if}
 				{#if confirmStep === 'select'}
 					<Dialog.Footer>
-						<Button type="button" variant="outline" onclick={handleDialogClose}>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							variant="destructive"
-							onclick={handleClearSelectedClick}
-						>
+						<Button type="button" variant="outline" onclick={handleDialogClose}>Cancel</Button>
+						<Button type="button" variant="destructive" onclick={handleClearSelectedClick}>
 							Clear selected
 						</Button>
 					</Dialog.Footer>
@@ -163,9 +156,7 @@
 						<p class="mt-3 font-medium text-destructive">This cannot be undone.</p>
 					</div>
 					<Dialog.Footer>
-						<Button type="button" variant="outline" onclick={handleBack}>
-							Back
-						</Button>
+						<Button type="button" variant="outline" onclick={handleBack}>Back</Button>
 						<Button type="button" variant="destructive" onclick={handleConfirmClear}>
 							Confirm clear
 						</Button>
@@ -176,18 +167,22 @@
 	</Dialog.Root>
 
 	{#if form?.error}
-		<div class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+		<div
+			class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
+		>
 			{form.error}
 		</div>
 	{/if}
 	{#if form?.success}
-		<div class="rounded-lg border border-green-500 bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+		<div
+			class="rounded-lg border border-green-500 bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200"
+		>
 			{form.message}
 		</div>
 	{/if}
 
 	{#if data.tables.length === 0}
-		<p class="text-muted-foreground py-12 text-center text-sm">
+		<p class="py-12 text-center text-sm text-muted-foreground">
 			No database connection (e.g. running outside Workers).
 		</p>
 	{:else}
@@ -198,7 +193,7 @@
 						class="grid w-full grid-cols-[1fr_auto_auto] items-center gap-2 px-4 py-3 text-left font-medium hover:underline [&[data-state=open]>svg]:rotate-180"
 					>
 						<span>{table.name}</span>
-						<span class="text-muted-foreground text-right text-sm font-normal">
+						<span class="text-right text-sm font-normal text-muted-foreground">
 							{table.total} row{table.total === 1 ? '' : 's'}
 							{#if table.truncated}
 								(showing first 500)
@@ -206,11 +201,9 @@
 						</span>
 					</Accordion.Trigger>
 					<Accordion.Content class="min-w-0">
-						<div class="min-w-0 w-full max-w-full overflow-x-auto px-4 pb-4">
+						<div class="w-full max-w-full min-w-0 overflow-x-auto px-4 pb-4">
 							{#if table.rows.length === 0}
-								<p class="text-muted-foreground py-4 text-center text-sm">
-									No rows
-								</p>
+								<p class="py-4 text-center text-sm text-muted-foreground">No rows</p>
 							{:else}
 								{@const cols = Object.keys(table.rows[0] ?? {})}
 								<table class="w-full border-collapse text-left text-sm">

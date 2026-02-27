@@ -82,23 +82,23 @@ pnpm preview -- --test-scheduled
 
 ## Routes
 
-| Route | Description |
-|---|---|
-| `/` | Home page with hero + data visualizations |
-| `/survey/setup` | Device onboarding |
-| `/survey/play` | A/B comparison game |
-| `/api/stream/[token]` | Ephemeral audio stream |
-| `/api/answers` | Submit comparison answer |
-| `/api/stats` | Latest result snapshot |
-| `/auth/login` | WorkOS AuthKit login redirect |
-| `/auth/callback` | OAuth callback handler |
-| `/auth/logout` | Clear session and redirect to login |
-| `/admin` | Admin dashboard (protected) |
-| `/admin/devices` | Manage listening devices |
-| `/admin/sources` | Upload and manage source audio |
-| `/admin/quality-options` | Toggle codec+bitrate permutations |
+| Route                    | Description                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `/`                      | Home page with hero + data visualizations                                               |
+| `/survey/setup`          | Device onboarding                                                                       |
+| `/survey/play`           | A/B comparison game                                                                     |
+| `/api/stream/[token]`    | Ephemeral audio stream                                                                  |
+| `/api/answers`           | Submit comparison answer                                                                |
+| `/api/stats`             | Latest result snapshot                                                                  |
+| `/auth/login`            | WorkOS AuthKit login redirect                                                           |
+| `/auth/callback`         | OAuth callback handler                                                                  |
+| `/auth/logout`           | Clear session and redirect to login                                                     |
+| `/admin`                 | Admin dashboard (protected)                                                             |
+| `/admin/devices`         | Manage listening devices                                                                |
+| `/admin/sources`         | Upload and manage source audio                                                          |
+| `/admin/quality-options` | Toggle codec+bitrate permutations                                                       |
 | `/admin/pairing-weights` | Pairing weights, placebo rate, permutation/transition/mode weights, Tradeoff gap config |
-| `/admin/snapshots` | View/trigger result snapshots |
+| `/admin/snapshots`       | View/trigger result snapshots                                                           |
 
 ## Visualizations
 

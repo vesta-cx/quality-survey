@@ -68,10 +68,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 			'ephemeral_stream_urls',
 			db.select().from(ephemeralStreamUrls).orderBy(desc(ephemeralStreamUrls.expiresAt))
 		),
-		fetchTable(
-			'answers',
-			db.select().from(answers).orderBy(desc(answers.createdAt))
-		),
+		fetchTable('answers', db.select().from(answers).orderBy(desc(answers.createdAt))),
 		fetchTable(
 			'result_snapshots',
 			db.select().from(resultSnapshots).orderBy(desc(resultSnapshots.createdAt))
@@ -114,18 +111,32 @@ export const actions = {
 			cleared.push('answers');
 		}
 		if (selected.has('candidate_files')) {
-			const candidates = await db.select({ id: candidateFiles.id, r2Key: candidateFiles.r2Key }).from(candidateFiles).all();
+			const candidates = await db
+				.select({ id: candidateFiles.id, r2Key: candidateFiles.r2Key })
+				.from(candidateFiles)
+				.all();
 			for (const c of candidates) {
-				try { await storage.delete(c.r2Key); } catch { /* ignore */ }
+				try {
+					await storage.delete(c.r2Key);
+				} catch {
+					/* ignore */
+				}
 			}
 			await db.delete(candidateFiles);
 			cleared.push('candidate_files');
 		}
 		if (selected.has('source_files')) {
-			const sources = await db.select({ id: sourceFiles.id, r2Key: sourceFiles.r2Key }).from(sourceFiles).all();
+			const sources = await db
+				.select({ id: sourceFiles.id, r2Key: sourceFiles.r2Key })
+				.from(sourceFiles)
+				.all();
 			for (const s of sources) {
 				if (s.r2Key) {
-					try { await storage.delete(s.r2Key); } catch { /* ignore */ }
+					try {
+						await storage.delete(s.r2Key);
+					} catch {
+						/* ignore */
+					}
 				}
 			}
 			await db.delete(sourceFiles);

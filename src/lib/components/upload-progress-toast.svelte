@@ -39,15 +39,12 @@
 	<p class="text-sm font-medium">
 		{message}
 	</p>
-	<div class="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+	<div class="h-1.5 w-full overflow-hidden rounded-full bg-muted">
 		{#if isIndeterminate}
-			<div
-				class="bg-primary h-full rounded-full animate-pulse"
-				style="width: 100%"
-			></div>
+			<div class="h-full animate-pulse rounded-full bg-primary" style="width: 100%"></div>
 		{:else}
 			<div
-				class="bg-primary h-full rounded-full transition-[width] duration-150 ease-out"
+				class="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
 				style="width: {pct}%"
 			></div>
 		{/if}

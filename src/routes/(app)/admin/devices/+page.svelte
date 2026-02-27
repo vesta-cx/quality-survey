@@ -15,8 +15,21 @@
 	let selectedIds = $state<Set<string>>(new Set());
 	let editDialogOpen = $state(false);
 	let addDialogOpen = $state(false);
-	let editingDevice = $state<{ id: string; brand: string; model: string; deviceType: string; connectionType: string; priceTier: string } | null>(null);
-	let newDevice = $state({ brand: '', model: '', deviceType: 'headphones', connectionType: 'wired', priceTier: 'mid' });
+	let editingDevice = $state<{
+		id: string;
+		brand: string;
+		model: string;
+		deviceType: string;
+		connectionType: string;
+		priceTier: string;
+	} | null>(null);
+	let newDevice = $state({
+		brand: '',
+		model: '',
+		deviceType: 'headphones',
+		connectionType: 'wired',
+		priceTier: 'mid'
+	});
 
 	const filteredDevices = $derived(
 		data.devices.filter((d) => {
@@ -48,7 +61,10 @@
 		selectedIds = next;
 	};
 
-	const handleApproveResult = (opts: { result?: { type?: string; data?: { approved?: number } }; update?: () => Promise<void> }) => {
+	const handleApproveResult = (opts: {
+		result?: { type?: string; data?: { approved?: number } };
+		update?: () => Promise<void>;
+	}) => {
 		if (opts?.result?.type === 'success' && opts.result?.data?.approved != null) {
 			toast.success(
 				opts.result.data.approved === 1
@@ -103,7 +119,13 @@
 	};
 
 	const openAdd = () => {
-		newDevice = { brand: '', model: '', deviceType: 'headphones', connectionType: 'wired', priceTier: 'mid' };
+		newDevice = {
+			brand: '',
+			model: '',
+			deviceType: 'headphones',
+			connectionType: 'wired',
+			priceTier: 'mid'
+		};
 		addDialogOpen = true;
 	};
 
@@ -146,19 +168,19 @@
 	</div>
 
 	{#if form?.error}
-		<div class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+		<div
+			class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
+		>
 			{form.error}
 		</div>
 	{/if}
 
 	{#if filteredDevices.length === 0}
-		<p class="text-muted-foreground py-12 text-center text-sm">No devices found.</p>
+		<p class="py-12 text-center text-sm text-muted-foreground">No devices found.</p>
 	{:else}
 		<div class="space-y-4">
-			<div
-				class="bg-muted/50 flex items-center justify-between gap-4 rounded-lg border px-4 py-2"
-			>
-				<span class="text-muted-foreground text-sm">
+			<div class="flex items-center justify-between gap-4 rounded-lg border bg-muted/50 px-4 py-2">
+				<span class="text-sm text-muted-foreground">
 					{someSelected
 						? `${selectedIds.size} device${selectedIds.size === 1 ? '' : 's'} selected`
 						: 'Select devices to approve or delete'}
@@ -176,7 +198,7 @@
 						<button
 							type="submit"
 							disabled={!someSelected}
-							class="text-primary hover:bg-primary/10 flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+							class="flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
 						>
 							<CircleCheck class="size-4" aria-hidden="true" />
 							Approve
@@ -194,7 +216,7 @@
 						<button
 							type="submit"
 							disabled={!someSelected}
-							class="text-destructive hover:bg-destructive/10 flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+							class="flex items-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
 							onclick={(e) => {
 								if (
 									!someSelected ||
@@ -252,11 +274,15 @@
 								<td class="px-4 py-2 capitalize">{device.priceTier}</td>
 								<td class="px-4 py-2">
 									{#if device.approvedAt}
-										<span class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">
+										<span
+											class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200"
+										>
 											Approved
 										</span>
 									{:else}
-										<span class="rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+										<span
+											class="rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+										>
 											Pending
 										</span>
 									{/if}
@@ -265,7 +291,7 @@
 									<div class="flex items-center gap-2">
 										<button
 											type="button"
-											class="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs hover:underline"
+											class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
 											onclick={() => openEdit(device)}
 										>
 											<Pencil class="size-3.5" aria-hidden="true" />
@@ -281,7 +307,7 @@
 										{:else}
 											<form method="POST" action="?/approve" use:enhance class="inline">
 												<input type="hidden" name="id" value={device.id} />
-												<button type="submit" class="text-primary text-xs hover:underline">
+												<button type="submit" class="text-xs text-primary hover:underline">
 													Approve
 												</button>
 											</form>
@@ -295,9 +321,13 @@
 											<input type="hidden" name="id" value={device.id} />
 											<button
 												type="submit"
-												class="text-muted-foreground hover:text-destructive text-xs hover:underline"
+												class="text-xs text-muted-foreground hover:text-destructive hover:underline"
 												onclick={(e) => {
-													if (!confirm('Delete this device? It cannot be deleted if used in responses.')) {
+													if (
+														!confirm(
+															'Delete this device? It cannot be deleted if used in responses.'
+														)
+													) {
 														e.preventDefault();
 													}
 												}}
@@ -321,9 +351,7 @@
 	<Dialog.Content class="max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Edit device</Dialog.Title>
-			<Dialog.Description>
-				Update brand, model, type, connection, or price tier.
-			</Dialog.Description>
+			<Dialog.Description>Update brand, model, type, connection, or price tier.</Dialog.Description>
 		</Dialog.Header>
 		{#if editingDevice}
 			<form
@@ -340,7 +368,7 @@
 						name="device_type"
 						required
 						bind:value={editingDevice.deviceType}
-						class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 					>
 						{#each data.deviceTypes ?? [] as type}
 							<option value={type}>{type === 'speaker' ? 'Speaker(s)' : 'Headphones'}</option>
@@ -354,7 +382,7 @@
 						name="connection_type"
 						required
 						bind:value={editingDevice.connectionType}
-						class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 					>
 						{#each data.connectionTypes ?? [] as type}
 							<option value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
@@ -369,7 +397,7 @@
 						type="text"
 						required
 						bind:value={editingDevice.brand}
-						class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 						placeholder="e.g. Sony, Sennheiser"
 					/>
 				</div>
@@ -381,7 +409,7 @@
 						type="text"
 						required
 						bind:value={editingDevice.model}
-						class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 						placeholder="e.g. WH-1000XM5"
 					/>
 				</div>
@@ -392,7 +420,7 @@
 						name="price_tier"
 						required
 						bind:value={editingDevice.priceTier}
-						class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 					>
 						{#each data.priceTiers ?? [] as tier}
 							<option value={tier}>{tier.charAt(0).toUpperCase() + tier.slice(1)}</option>
@@ -403,7 +431,7 @@
 					<Dialog.Close>Cancel</Dialog.Close>
 					<button
 						type="submit"
-						class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium"
+						class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 					>
 						Save changes
 					</button>
@@ -435,7 +463,7 @@
 					name="device_type"
 					required
 					bind:value={newDevice.deviceType}
-					class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 				>
 					{#each data.deviceTypes ?? [] as type}
 						<option value={type}>{type === 'speaker' ? 'Speaker(s)' : 'Headphones'}</option>
@@ -449,7 +477,7 @@
 					name="connection_type"
 					required
 					bind:value={newDevice.connectionType}
-					class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 				>
 					{#each data.connectionTypes ?? [] as type}
 						<option value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
@@ -464,7 +492,7 @@
 					type="text"
 					required
 					bind:value={newDevice.brand}
-					class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 					placeholder="e.g. Sony, Sennheiser"
 				/>
 			</div>
@@ -476,7 +504,7 @@
 					type="text"
 					required
 					bind:value={newDevice.model}
-					class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 					placeholder="e.g. WH-1000XM5"
 				/>
 			</div>
@@ -487,7 +515,7 @@
 					name="price_tier"
 					required
 					bind:value={newDevice.priceTier}
-					class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 				>
 					{#each data.priceTiers ?? [] as tier}
 						<option value={tier}>{tier.charAt(0).toUpperCase() + tier.slice(1)}</option>
@@ -498,7 +526,7 @@
 				<Dialog.Close>Cancel</Dialog.Close>
 				<button
 					type="submit"
-					class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium"
+					class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 				>
 					Add device
 				</button>

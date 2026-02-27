@@ -36,19 +36,13 @@
 
 {#if heatmapData.length > 0}
 	<div class={className}>
-		<h3 class="text-muted-foreground text-sm font-medium">Codec × Bitrate Matchup Win Rates</h3>
-		<p class="text-muted-foreground mt-0.5 text-xs">
+		<h3 class="text-sm font-medium text-muted-foreground">Codec × Bitrate Matchup Win Rates</h3>
+		<p class="mt-0.5 text-xs text-muted-foreground">
 			Green = first codec wins; Red = second wins; 50% = equivalent.
 		</p>
 		{#await import('@vesta-cx/ui/components/ui/heatmap') then { Heatmap }}
 			<div class="mt-4">
-				<Heatmap
-					data={heatmapData}
-					{rows}
-					{cols}
-					rowLabel="Codec A"
-					colLabel="Codec B"
-				/>
+				<Heatmap data={heatmapData} {rows} {cols} rowLabel="Codec A" colLabel="Codec B" />
 			</div>
 		{/await}
 	</div>

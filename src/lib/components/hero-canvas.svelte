@@ -271,8 +271,7 @@
 			(entries) => {
 				const e = entries[0];
 				if (!e) return;
-				const visible =
-					e.isIntersecting && e.intersectionRatio >= VISIBILITY_THRESHOLD;
+				const visible = e.isIntersecting && e.intersectionRatio >= VISIBILITY_THRESHOLD;
 				isVisible = visible;
 				if (visible) animate();
 			},

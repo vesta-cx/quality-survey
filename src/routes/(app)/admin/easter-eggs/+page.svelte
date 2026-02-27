@@ -75,7 +75,7 @@
 			<form method="POST" action="?/seed" use:enhance={() => (opts) => handleSeedResult(opts)}>
 				<button
 					type="submit"
-					class="bg-muted text-muted-foreground hover:bg-muted/80 rounded-lg px-4 py-2 text-sm font-medium"
+					class="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/80"
 				>
 					Seed defaults
 				</button>
@@ -87,20 +87,23 @@
 		</div>
 	</div>
 
-	<p class="text-muted-foreground text-sm">
-		Short messages shown in the round summary at randomized intervals (~every 17–23 rounds). One is picked at
-		random from this list when a user hits an easter-egg round.
+	<p class="text-sm text-muted-foreground">
+		Short messages shown in the round summary at randomized intervals (~every 17–23 rounds). One is
+		picked at random from this list when a user hits an easter-egg round.
 	</p>
 
 	{#if form?.error}
-		<div class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+		<div
+			class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
+		>
 			{form.error}
 		</div>
 	{/if}
 
 	{#if data.messages.length === 0}
-		<p class="text-muted-foreground py-12 text-center text-sm">
-			No easter egg messages yet. Click "Seed defaults" to add a starter set, or "Add message" to create one.
+		<p class="py-12 text-center text-sm text-muted-foreground">
+			No easter egg messages yet. Click "Seed defaults" to add a starter set, or "Add message" to
+			create one.
 		</p>
 	{:else}
 		<div class="rounded-lg border">
@@ -119,7 +122,7 @@
 								<div class="flex items-center justify-end gap-2">
 									<button
 										type="button"
-										class="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs hover:underline"
+										class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
 										onclick={() => openEdit(msg)}
 									>
 										<Pencil class="size-3.5" aria-hidden="true" />
@@ -134,7 +137,7 @@
 										<input type="hidden" name="id" value={msg.id} />
 										<button
 											type="submit"
-											class="text-muted-foreground hover:text-destructive flex items-center gap-1 text-xs hover:underline"
+											class="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive hover:underline"
 											onclick={(e) => {
 												if (!confirm('Delete this easter egg message?')) e.preventDefault();
 											}}
@@ -176,7 +179,7 @@
 					type="text"
 					required
 					bind:value={newMessage}
-					class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 					placeholder="e.g. good data... yum"
 				/>
 			</div>
@@ -184,7 +187,7 @@
 				<Dialog.Close>Cancel</Dialog.Close>
 				<button
 					type="submit"
-					class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium"
+					class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 				>
 					Add
 				</button>
@@ -216,7 +219,7 @@
 						type="text"
 						required
 						bind:value={editingMessage.message}
-						class="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2"
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
 						placeholder="e.g. good data... yum"
 					/>
 				</div>
@@ -224,7 +227,7 @@
 					<Dialog.Close>Cancel</Dialog.Close>
 					<button
 						type="submit"
-						class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium"
+						class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
 					>
 						Save
 					</button>

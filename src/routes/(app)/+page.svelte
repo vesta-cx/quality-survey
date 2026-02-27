@@ -73,13 +73,14 @@
 </svelte:head>
 
 <!-- Hero Section -->
-<Section data-section="hero" class="min-h-[max(calc(100svh-20rem),40rem)] justify-center items-center">
+<Section
+	data-section="hero"
+	class="min-h-[max(calc(100svh-20rem),40rem)] items-center justify-center"
+>
 	<SectionBackground>
-		<div
-			class="from-primary/5 via-background to-primary/5 absolute inset-0 bg-linear-to-br"
-		></div>
+		<div class="absolute inset-0 bg-linear-to-br from-primary/5 via-background to-primary/5"></div>
 		<HeroCanvas waves={4} particles={96} />
-		<div class="from-background absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t"></div>
+		<div class="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-background"></div>
 	</SectionBackground>
 	<SectionContent class="flex flex-col items-center text-center">
 		<div class="mx-auto max-w-3xl">
@@ -87,19 +88,19 @@
 				Can you hear
 				<span class="text-primary">the difference?</span>
 			</h1>
-			<p class="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg">
+			<p class="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
 				Put your ears to the test, and help us build better streaming.
 			</p>
 			<div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
 				<a
 					href="/survey/setup"
-					class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded-lg px-6 py-3 text-sm font-medium shadow-sm transition-colors"
+					class="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
 				>
 					Play Now
 				</a>
 				<a
 					href="#results"
-					class="text-muted-foreground hover:text-foreground inline-flex items-center rounded-lg px-6 py-3 text-sm font-medium transition-colors"
+					class="inline-flex items-center rounded-lg px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
 					View Results ↓
 				</a>
@@ -114,12 +115,14 @@
 		{#if snapshot}
 			<div class="mb-12 text-center">
 				<h2 class="text-3xl font-bold tracking-tight">Results So Far</h2>
-				<p class="text-muted-foreground mt-2">
+				<p class="mt-2 text-muted-foreground">
 					Based on {snapshot.totalResponses.toLocaleString()} blind comparisons
 				</p>
 				{#if contentLibrary && contentLibrary.songCount > 0}
-					<p class="text-muted-foreground mt-1 text-sm">
-						Content library: {contentLibrary.songCount} {contentLibrary.songCount === 1 ? 'song' : 'songs'} from {contentLibrary.artistCount} {contentLibrary.artistCount === 1 ? 'artist' : 'artists'}
+					<p class="mt-1 text-sm text-muted-foreground">
+						Content library: {contentLibrary.songCount}
+						{contentLibrary.songCount === 1 ? 'song' : 'songs'} from {contentLibrary.artistCount}
+						{contentLibrary.artistCount === 1 ? 'artist' : 'artists'}
 					</p>
 				{/if}
 			</div>
@@ -145,7 +148,7 @@
 						aacComparisons={snapshot.aacComparisons}
 						mp3WinRate={snapshot.mp3WinRate}
 						mp3Comparisons={snapshot.mp3Comparisons}
-						codecWinRates={codecWinRates}
+						{codecWinRates}
 					/>
 				</div>
 				<div class="rounded-xl border bg-card p-6">
@@ -176,7 +179,7 @@
 						midCount={snapshot.tierMidCount}
 						premiumCount={snapshot.tierPremiumCount}
 						flagshipCount={snapshot.tierFlagshipCount}
-						deviceBreakdown={deviceBreakdown}
+						{deviceBreakdown}
 					/>
 				</div>
 				<div class="rounded-xl border bg-card p-6">
@@ -203,7 +206,7 @@
 				{:else if heatmapData.length > 0}
 					{#await import('@vesta-cx/ui/components/ui/heatmap') then { Heatmap }}
 						<div class="rounded-xl border bg-card p-6 md:col-span-2 lg:col-span-3">
-							<h3 class="text-muted-foreground text-sm font-medium">Codec × Bitrate Win Rates</h3>
+							<h3 class="text-sm font-medium text-muted-foreground">Codec × Bitrate Win Rates</h3>
 							<div class="mt-4">
 								<Heatmap
 									data={heatmapData}
@@ -236,15 +239,12 @@
 
 				{#if Object.keys(btScores).length > 0}
 					<div class="rounded-xl border bg-card p-6">
-						<StatCard.StatCard
-							label="Quality Rankings"
-							helper="Bradley-Terry model scores"
-						>
+						<StatCard.StatCard label="Quality Rankings" helper="Bradley-Terry model scores">
 							<div class="space-y-2">
 								{#each Object.entries(btScores).sort(([, a], [, b]) => b - a) as [key, score], i}
 									<div class="flex items-center justify-between text-sm">
 										<div class="flex items-center gap-2">
-											<span class="text-muted-foreground w-5 text-xs">#{i + 1}</span>
+											<span class="w-5 text-xs text-muted-foreground">#{i + 1}</span>
 											<span class="font-medium">{key}</span>
 										</div>
 										<span class="text-muted-foreground">{score.toFixed(2)}</span>
@@ -261,10 +261,7 @@
 						<PqConfidenceBandChart scoresByGenre={snapshot.codecPqScoresByGenre} />
 					</div>
 					<div class="rounded-xl border bg-card p-6 md:col-span-2">
-						<PqSpaghettiChart
-							scoresByGenre={snapshot.codecPqScoresByGenre}
-							codec="opus"
-						/>
+						<PqSpaghettiChart scoresByGenre={snapshot.codecPqScoresByGenre} codec="opus" />
 					</div>
 					<div class="rounded-xl border bg-card p-6 md:col-span-2 lg:col-span-3">
 						<GenreHeatmapChart scoresByGenre={snapshot.codecPqScoresByGenre} />
@@ -272,11 +269,7 @@
 				{/if}
 			</div>
 
-			<CodecDescriptions
-				codecs={codecs}
-				descriptions={codecDescriptions}
-				class="mt-12"
-			/>
+			<CodecDescriptions {codecs} descriptions={codecDescriptions} class="mt-12" />
 		{:else}
 			<div class="mx-auto max-w-md py-20">
 				<Empty.Empty>
@@ -286,15 +279,15 @@
 					<Empty.Header>
 						<Empty.Title>Not enough data yet</Empty.Title>
 						<Empty.Description>
-							We need more listening data before we can show meaningful visualizations.
-							Every comparison you complete helps us build a clearer picture of how audio
-							codecs are perceived.
+							We need more listening data before we can show meaningful visualizations. Every
+							comparison you complete helps us build a clearer picture of how audio codecs are
+							perceived.
 						</Empty.Description>
 					</Empty.Header>
 					<Empty.Content>
 						<a
 							href="/survey/setup"
-							class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded-lg px-6 py-3 text-sm font-medium shadow-sm transition-colors"
+							class="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
 						>
 							Play the first round
 						</a>
@@ -302,11 +295,7 @@
 				</Empty.Empty>
 			</div>
 
-			<CodecDescriptions
-				codecs={codecs}
-				descriptions={codecDescriptions}
-				class="mt-8"
-			/>
+			<CodecDescriptions {codecs} descriptions={codecDescriptions} class="mt-8" />
 		{/if}
 	</SectionContent>
 </Section>

@@ -44,7 +44,10 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 	const codecTotal: Record<string, number> = {};
 
 	// We need candidate details to know codec+bitrate
-	const candidateCache = new Map<string, { codec: string; bitrate: number; sourceFileId: string }>();
+	const candidateCache = new Map<
+		string,
+		{ codec: string; bitrate: number; sourceFileId: string }
+	>();
 
 	const loadCandidate = async (id: string) => {
 		if (candidateCache.has(id)) return candidateCache.get(id)!;
@@ -93,7 +96,9 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 			.from(sourceFiles)
 			.where(eq(sourceFiles.id, sourceFileId))
 			.get();
-		const genres = parseList(row?.genre ?? '').map((g) => g.toLowerCase().trim()).filter(Boolean);
+		const genres = parseList(row?.genre ?? '')
+			.map((g) => g.toLowerCase().trim())
+			.filter(Boolean);
 		sourceGenreCache.set(sourceFileId, genres);
 		return genres;
 	};
@@ -172,8 +177,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		const maxGenreStrength = Math.max(...Object.values(genreScores), 1);
 		for (const [key, strength] of Object.entries(genreScores)) {
 			codecPqScoresByGenre[key] = codecPqScoresByGenre[key] ?? {};
-			codecPqScoresByGenre[key][genre] =
-				Math.round((strength / maxGenreStrength) * 1000) / 10;
+			codecPqScoresByGenre[key][genre] = Math.round((strength / maxGenreStrength) * 1000) / 10;
 		}
 	}
 
@@ -199,8 +203,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 			.where(eq(listeningDevices.id, answer.deviceId))
 			.get();
 		if (device) {
-			deviceBreakdown[device.deviceType] =
-				(deviceBreakdown[device.deviceType] ?? 0) + 1;
+			deviceBreakdown[device.deviceType] = (deviceBreakdown[device.deviceType] ?? 0) + 1;
 			tierBreakdown[device.priceTier] = (tierBreakdown[device.priceTier] ?? 0) + 1;
 		}
 		if (answer.responseTime != null) {
@@ -271,17 +274,14 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 
 		const brKey = String(lossy.bitrate);
 		flacVsLossyTotal[lossy.codec] = flacVsLossyTotal[lossy.codec] ?? {};
-		flacVsLossyTotal[lossy.codec][brKey] =
-			(flacVsLossyTotal[lossy.codec][brKey] ?? 0) + 1;
+		flacVsLossyTotal[lossy.codec][brKey] = (flacVsLossyTotal[lossy.codec][brKey] ?? 0) + 1;
 
 		if (answer.selected === 'a' && isAFlac) {
 			flacVsLossyWins[lossy.codec] = flacVsLossyWins[lossy.codec] ?? {};
-			flacVsLossyWins[lossy.codec][brKey] =
-				(flacVsLossyWins[lossy.codec][brKey] ?? 0) + 1;
+			flacVsLossyWins[lossy.codec][brKey] = (flacVsLossyWins[lossy.codec][brKey] ?? 0) + 1;
 		} else if (answer.selected === 'b' && isBFlac) {
 			flacVsLossyWins[lossy.codec] = flacVsLossyWins[lossy.codec] ?? {};
-			flacVsLossyWins[lossy.codec][brKey] =
-				(flacVsLossyWins[lossy.codec][brKey] ?? 0) + 1;
+			flacVsLossyWins[lossy.codec][brKey] = (flacVsLossyWins[lossy.codec][brKey] ?? 0) + 1;
 		}
 	}
 
@@ -332,10 +332,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		if (!candA || !candB) continue;
 		if (candA.codec === candB.codec) continue;
 
-		const [first, second] =
-			candA.codec < candB.codec
-				? [candA, candB]
-				: [candB, candA];
+		const [first, second] = candA.codec < candB.codec ? [candA, candB] : [candB, candA];
 		const pairKey = `${first.codec}_vs_${second.codec}`;
 		const brKey = `${first.bitrate}_${second.bitrate}`;
 
@@ -366,10 +363,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		'64-128': '65_128',
 		'128+': '129_plus'
 	};
-	const bitrateGapConfidence: Record<
-		string,
-		{ neither_rate: number; sample_size: number }
-	> = {};
+	const bitrateGapConfidence: Record<string, { neither_rate: number; sample_size: number }> = {};
 	for (const [bucket, { neither, total }] of Object.entries(neitherByDiff)) {
 		const key = bucketToKey[bucket] ?? bucket;
 		bitrateGapConfidence[key] = {
@@ -391,8 +385,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 				const [brA, brB] = brKey.split('_').map(Number);
 				if (brA > 0 && brB > 0) {
 					const ratio = brB / brA;
-					if (bestRatio == null || Math.abs(ratio - 1) < Math.abs(bestRatio - 1))
-						bestRatio = ratio;
+					if (bestRatio == null || Math.abs(ratio - 1) < Math.abs(bestRatio - 1)) bestRatio = ratio;
 				}
 			}
 		}
@@ -427,12 +420,9 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 
 	const bitrateLosslessWinRate =
 		tierTotal.lossless > 0 ? tierWins.lossless / tierTotal.lossless : null;
-	const bitrateHighWinRate =
-		tierTotal.high > 0 ? tierWins.high / tierTotal.high : null;
-	const bitrateMidWinRate =
-		tierTotal.mid > 0 ? tierWins.mid / tierTotal.mid : null;
-	const bitrateLowWinRate =
-		tierTotal.low > 0 ? tierWins.low / tierTotal.low : null;
+	const bitrateHighWinRate = tierTotal.high > 0 ? tierWins.high / tierTotal.high : null;
+	const bitrateMidWinRate = tierTotal.mid > 0 ? tierWins.mid / tierTotal.mid : null;
+	const bitrateLowWinRate = tierTotal.low > 0 ? tierWins.low / tierTotal.low : null;
 
 	// Headline matchups: lossless vs lossy, opus vs mp3, aac vs mp3
 	let losslessVsLossyWins = 0;
@@ -451,10 +441,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		const isBFlac = candB.codec === 'flac';
 		if (isAFlac !== isBFlac) {
 			losslessVsLossyTotal += 1;
-			if (
-				(answer.selected === 'a' && isAFlac) ||
-				(answer.selected === 'b' && isBFlac)
-			) {
+			if ((answer.selected === 'a' && isAFlac) || (answer.selected === 'b' && isBFlac)) {
 				losslessVsLossyWins += 1;
 			}
 		}
@@ -539,10 +526,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 	const differentSongAnswers = allAnswers.filter((a) => a.pairingType === 'different_song');
 	let qualityWins = 0;
 	let contentWins = 0;
-	const qualityByGap: Record<
-		string,
-		{ quality_wins: number; content_wins: number }
-	> = {};
+	const qualityByGap: Record<string, { quality_wins: number; content_wins: number }> = {};
 	const getGapKey = (diff: number): string => {
 		if (diff <= 32) return '32kbps_gap';
 		if (diff <= 64) return '64kbps_gap';
@@ -580,8 +564,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		differentSongAnswers.length > 0
 			? { quality_wins: qualityWins, content_wins: contentWins }
 			: null;
-	const qualityVsContentByGap =
-		Object.keys(qualityByGap).length > 0 ? qualityByGap : null;
+	const qualityVsContentByGap = Object.keys(qualityByGap).length > 0 ? qualityByGap : null;
 
 	// New snapshot stats (pair-picking redesign)
 	const sourceIdsUsed = new Set<string>();
@@ -614,9 +597,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 	}
 	const sourcesetArtistCount = artistSet.size;
 	const sourceCoverage =
-		approvedSources.length > 0
-			? sourceIdsUsed.size / approvedSources.length
-			: null;
+		approvedSources.length > 0 ? sourceIdsUsed.size / approvedSources.length : null;
 
 	const roundsPerMode: Record<string, number> = {};
 	const winCountByMode: Record<string, number> = {};
@@ -682,12 +663,13 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		const candA = await loadCandidate(answer.candidateAId);
 		const candB = await loadCandidate(answer.candidateBId);
 		if (!candA || !candB) continue;
-		const winnerSourceId =
-			answer.selected === 'a' ? candA.sourceFileId : candB.sourceFileId;
+		const winnerSourceId = answer.selected === 'a' ? candA.sourceFileId : candB.sourceFileId;
 		sourceWins[winnerSourceId] = (sourceWins[winnerSourceId] ?? 0) + 1;
 		const meta = await loadSourceMeta(winnerSourceId);
 		if (meta.artist) {
-			for (const a of parseList(meta.artist).map((x) => x.trim()).filter(Boolean)) {
+			for (const a of parseList(meta.artist)
+				.map((x) => x.trim())
+				.filter(Boolean)) {
 				artistWins[a] = (artistWins[a] ?? 0) + 1;
 			}
 		}
@@ -756,8 +738,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 			Object.keys(bitrateGapConfidence).length > 0 ? bitrateGapConfidence : null,
 		codecEquivalenceRatios:
 			Object.keys(codecEquivalenceRatios).length > 0 ? codecEquivalenceRatios : null,
-		flacVsLossyWinRates:
-			Object.keys(flacVsLossy).length > 0 ? flacVsLossy : null,
+		flacVsLossyWinRates: Object.keys(flacVsLossy).length > 0 ? flacVsLossy : null,
 		codecPqScores: Object.keys(codecPqScores).length > 0 ? codecPqScores : null,
 		transparencyThresholds:
 			Object.keys(transparencyThresholds).length > 0 ? transparencyThresholds : null,
@@ -794,9 +775,7 @@ export const generateSnapshot = async (db: Database): Promise<void> => {
 		const toDelete = oldSnapshots.slice(100);
 		for (const s of toDelete) {
 			if (s.createdAt) {
-				await db
-					.delete(resultSnapshots)
-					.where(eq(resultSnapshots.createdAt, s.createdAt));
+				await db.delete(resultSnapshots).where(eq(resultSnapshots.createdAt, s.createdAt));
 			}
 		}
 	}
