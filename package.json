@@ -48,7 +48,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.2.0",
 		"@types/node": "^25.3.0",
-		"@vesta-cx/ui": "workspace:*",
+		"@vesta-cx/ui": "^0.0.1",
 		"@vitest/browser-playwright": "^4.0.18",
 		"@vitest/coverage-v8": "^4.0.18",
 		"clsx": "^2.1.1",
@@ -84,7 +84,7 @@
 	"dependencies": {
 		"@nanostores/persistent": "^1.3.3",
 		"@vesta-cx/storage": "workspace:*",
-		"@vesta-cx/utils": "workspace:*",
+		"@vesta-cx/utils": "^1.0.0",
 		"layerchart": "2.0.0-next.46",
 		"music-metadata": "^11.12.1",
 		"nanostores": "^1.1.0"
